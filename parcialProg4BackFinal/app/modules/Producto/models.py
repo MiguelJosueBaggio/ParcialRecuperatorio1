@@ -5,9 +5,11 @@ from decimal import Decimal
 from datetime import datetime
 from sqlalchemy import Column, ForeignKey, Integer, ARRAY, TEXT
 from app.modules.Ingrediente.models import productoIngredienteLink
+from app.modules.DetallePedido.models import DetallePedido
 if TYPE_CHECKING: ##Evitar refercnias circualreas
     from app.modules.Ingrediente.models import Ingrediente
     from app.modules.Categoria.models import Categoria
+    from app.modules.DetallePedido.models import DetallePedido
 
 ##Tabala producto
 class Producto (SQLModel,table=True):
@@ -30,6 +32,9 @@ class Producto (SQLModel,table=True):
    ###Relacion 1 categoria muchos productos
     categoria_id: Optional[int] = Field(default=None, foreign_key="categoria.id")
     categoria: Optional["Categoria"] = Relationship(back_populates="productos")
+
+    ###Relacion 1 producto muchos detalles pedido       
+    detalles_pedido: List["DetallePedido"] = Relationship(back_populates="producto")
 
 ###Relacion muchos a muchos con ingredientes
     ingredientes:List["Ingrediente"]= Relationship(
