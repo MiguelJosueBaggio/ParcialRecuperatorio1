@@ -17,6 +17,7 @@ class Producto (SQLModel,table=True):
     __tablename__= "producto"
 
     id: Optional[int]= Field(default=None, primary_key=True)
+    unidad_venta_id:  Optional[int] = Field(default=None, foreign_key="Unidad_medida.id")
     nombre: str = Field(index=True)
     descripcion :Optional[str]= Field(default=None)
     precio_base: Decimal=Field(default=0.0,ge=0)

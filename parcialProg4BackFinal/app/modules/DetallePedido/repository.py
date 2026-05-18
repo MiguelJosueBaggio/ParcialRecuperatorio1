@@ -18,3 +18,10 @@ class DetallePedidoRepository(BaseRepository[DetallePedido]):
         .limit(limit)
     )
         return list(self.session.exec(statement).all())
+    def obtener_precio_producto(self, producto_id: int) -> float:
+        statement = select(Producto).where(Producto.id == producto_id)             ##obtenemos precio del prodocto para suincluirlo en snapshot precio 
+        producto = self.session.exec(statement).first()
+        if producto:
+            return producto.precio
+        else:
+            raise ValueError(f"Producto con id {producto_id} no encontrado")

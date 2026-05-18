@@ -11,6 +11,8 @@ if TYPE_CHECKING: ##Evitar refercnias circualreas
 
 ##Tabla DetallePedido
 class DetallePedido (SQLModel,table=True):
+ __tablename__= "detalle_pedido"
+
  id: Optional[int]= Field(default=None, primary_key=True)
  producto_id: Optional[int] = Field(default=None, foreign_key="producto.id")
  producto: Optional["Producto"] = Relationship(back_populates="detalles_pedido")

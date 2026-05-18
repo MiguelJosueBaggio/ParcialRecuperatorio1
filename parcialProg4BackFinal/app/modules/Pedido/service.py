@@ -1,90 +1,103 @@
 from fastapi import HTTPException, status
 from sqlmodel import Session
 
+from app.modules.Pedido.models import Pedido
 from app.modules.DetallePedido.models import DetallePedido
-from app.modules.DetallePedido.schema import DetallePedidoCreate, DetallePedidoPublic, DetallePedidoUpdate,DetallePedidoList
+from app.modules.Pedido.schemas import PedidoCreate, PedidoPublic, PedidoUpdate, PedidoList, DetallePedidoCreate, DetallePedidoPublic
+from app.modules.Pedido.unit_of_work import PedidoUnitofWork
 from app.modules.DetallePedido.unit_of_work import DetallePedidoUnitofWork
 
-class DetallePedidoService:
+class PedidoService:
 
     ##Inicia servecie
     def __init__(self, session: Session) -> None:
         
         self._session = session
 
-##obtenemos un producto por su id sino retruna error 404
-    def _get_or_404(self, uow: DetallePedidoUnitofWork, detalle_pedido_id: int) -> DetallePedido:
+##obtenemos un pedido por su id sino retruna error 404
+    def _get_or_404(self, uow: PedidoUnitofWork, pedido_id: int) -> Pedido:
         
        
-        detallePedido = uow.detalle_pedidos.get_by_id(detalle_pedido_id)
-        if not detallePedido:
+        pedido = uow.pedidos.get_by_id(pedido_id)
+        if not pedido:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"detalle_id con id={detalle_pedido_id} no encontrado",
+                detail=f"pedido con id={pedido_id} no encontrado",
             )
-        return detallePedido
+        return pedido
    
     ###Obtenemos los activos
-    def get_all(self, offset: int = 0, limit: int = 10) -> DetallePedidoList:
-        with DetallePedidoUnitofWork(self._session) as uow:
-            detalle_pedidos = uow.detalle_pedidos.get_active(  ####REVISAR
+    def get_all(self, offset: int = 0, limit: int = 10) -> PedidoList:
+        with PedidoUnitofWork(self._session) as uow:
+            pedidos = uow.pedidos.get_active(
               offset=offset,
                limit=limit
         )
 
-        total = uow.detalle_pedidos.count()
+        total = uow.pedidos.count()
 
-        result = DetallePedidoList(
+        result = PedidoList(
             data=[
-                DetallePedidoPublic.model_validate(i)
-                for i in detalle_pedidos
+                PedidoPublic.model_validate(i)
+                for i in pedidos            
             ],
             total=total,
         )
 
         return result
         ##obtener ingrediente del produto segun su id
-  
-    def get_producto_or_404(self,uow:DetallePedidoUnitofWork, producto_id:int):
+    def get_ingrediente_or_404(self,uow:ProductoUnitofWork, ingrediente_id:int):
         
-        producto = uow.productos.get_by_id(producto_id)
-        if not producto:
+        ingrediente = uow.ingredientes.get_by_id(ingrediente_id)
+        if not ingrediente:
             raise HTTPException(
                 status_code=404,
-                detail=f"el produto con id={producto_id} no encontrado"
+                detail=f"Ingredienet con id={ingrediente_id} no encontrado"
             )
-        return producto
+        return ingrediente
+    
+    def get_categoria_or_404(self,uow:ProductoUnitofWork, categoria_id:int):
+        
+        categoria = uow.categorias.get_by_id(categoria_id)
+        if not categoria:
+            raise HTTPException(
+                status_code=404,
+                detail=f"categoria con id={categoria_id} no encontrado"
+            )
+        return categoria
 
 
 ##Obten buscar por id
 
-    def get_by_id(self, detalle_pedido_id: int) -> DetallePedidoPublic:
+    def get_by_id(self, pedido_id: int) -> PedidoPublic:
         
-        with DetallePedidoUnitofWork(self._session) as uow:
-            detalle_pedido = self._get_or_404(uow, detalle_pedido_id)
-            result = DetallePedidoPublic.model_validate(detalle_pedido)
+        with PedidoUnitofWork(self._session) as uow:
+            pedido = self._get_or_404(uow, pedido_id)
+            result = PedidoPublic.model_validate(pedido)
 
         return result    
-   
-    def __calcular_subtotal(self,data:DetallePedidoCreate)->float:
-
+    def crear_detalle_pedido(self,data1: DetallePedidoCreate)-> DetallePedidoPublic:
         with DetallePedidoUnitofWork(self._session) as uow:
-          sutotal=data.cantidad*data.precio_snapshot
-        return sutotal
+            detalle_pedido= DetallePedido.model_validate(data1)
+            precio= uow.detalle_pedidos.obtener_precio_producto(detalle_pedido.producto_id)          ##El detallle pedoido debe ser creado dentro de pedido
+            detalle_pedido.subtotal_snap=detalle_pedido.cantidad*precio
+
+            uow.detalle_pedidos.add(detalle_pedido)
+            result= DetallePedidoPublic.model_validate(detalle_pedido)
+            return result
 
 
  
 ##crea producto
 
-    def create(self, data: ) -> ProductoPublic:
+    def create(self, data: PedidoCreate) -> PedidoPublic:
         
        
-        with ProductoUnitofWork(self._session) as uow:
+        with PedidoUnitofWork(self._session) as uow:
            
-            self.get_categoria_or_404(uow, data.categoria_id)
-
-            producto = Producto.model_validate(data)
-            for ingrediente_id in data.ingrediente_ids: ##recoerre los ingredientes agregados
+                pedido = Pedido.model_validate(data)    
+            
+             for ingrediente_id in data.ingrediente_ids: ##recoerre los ingredientes agregados
                  ingrediente= self.get_ingrediente_or_404(uow,ingrediente_id)##si esta presemnete el ingrediente se guarga en ingrediente
                  producto.ingredientes.append(ingrediente) ##guardamos el ingredeinte en ela lista que ira  a la base de datos
 
@@ -93,7 +106,7 @@ class DetallePedidoService:
             
            
             
-            uow.productos.add(producto)
+           uow.productos.add(producto)
 
             
             result = ProductoPublic.model_validate(producto)

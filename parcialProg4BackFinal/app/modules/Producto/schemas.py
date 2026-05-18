@@ -4,13 +4,14 @@ from decimal import Decimal
 
 
 class ProductoCreate(SQLModel):
+   
     nombre:str=      Field(min_length=2, max_length=150)
     descripcion:str
     precio_base: Decimal= Field(ge=0)
     imagenes_url: List[str] = Field(default_factory=list)
     stock_cantidad:int = Field(ge=0,default=0)
     disponible:bool = Field(default=True)
-
+    unidad_venta_id:Optional[int]= None
     categoria_id: Optional[int]= None
     ingrediente_ids: List[int] = Field(default_factory=list)##modi
 
@@ -22,6 +23,7 @@ class ProductoUpdate(SQLModel):
     stock_cantidad:Optional[int]=None
     disponible:Optional[bool]=None
     is_active: Optional[bool]= None
+    unidad_venta_id:Optional[int]= None
     categoria_id: Optional[int]= None
     ingrediente_ids: Optional[List[int]] = None 
 
@@ -35,7 +37,7 @@ class ProductoPublic(SQLModel):
     disponible:bool
     is_active:bool
     ingrediente_ids: List[int] = Field(default_factory=list)
-
+    unidad_venta_id:Optional[int]= None
    ## ingredientes: List[int]=[]    
    ## categoria: Optional[CategoriaPublic] = None
     categoria_id: Optional[int]= None
