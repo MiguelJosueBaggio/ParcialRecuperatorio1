@@ -95,7 +95,7 @@ class PedidoService:
  
 ##crea pedido
 
-    def create(self, data: PedidoCreate,data2:DetallePedidoCreate) -> PedidoPublic:
+    def create(self, data: PedidoCreate) -> PedidoPublic:
         
        
         with PedidoUnitofWork(self._session) as uow:
@@ -112,7 +112,7 @@ class PedidoService:
                     detalle_baseDatos.precio_snapshot=precio ##cargo a la base de datos el valor de precio
                     detalle_baseDatos.subtotal_snap=(precio*detalle_baseDatos.cantidad) ##Calcuñlo el subtotal y se guarda en bases de datos
                     detalle_baseDatos.personalizacion=[] # dentor de cada detalle pedido puedo elegir ingredientes a perosnalizar
-                    for personalizado in data2.personalizacion: ##recooro la lista del detalle create que cargo el usuario
+                    for personalizado in detalle_pedido.personalizacion: ##recooro la lista del detalle create que cargo el usuario
                         removible= self.get_ingrediente_perosnalizables(uow,personalizado) ##uso la fucion para obtener el ingrediente reciebe como para parametro el entero que cargo el usuariioo
                         detalle_baseDatos.personalizacion.append(removible) ## guardo en le lista de al basees de datos de los persoanlizables
 

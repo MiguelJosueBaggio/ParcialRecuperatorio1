@@ -37,7 +37,7 @@ from fastapi import Depends, HTTPException, status  # Inyección y manejo de err
 from fastapi.security import OAuth2PasswordBearer  # Manejo estándar de OAuth2 con Bearer
 
 from app.core.security import decode_access_token  # Función para decodificar JWT
-from app.core.uow import UnitOfWork, get_uow       # Patrón Unit of Work para DB
+from app.core.unit_of_work import UnitOfWork, get_uow       # Patrón Unit of Work para DB
 from app.modules.usuarios.model import Usuario     # Modelo de dominio Usuario
 from app.modules.usuarios.model import UserPublic     # Modelo de dominio Usuario
 
