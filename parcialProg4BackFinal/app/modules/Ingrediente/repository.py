@@ -36,4 +36,12 @@ class IngredienteRepository(BaseRepository[Ingrediente]):
     )
         return list(self.session.exec(statement).all())
     
-    
+    def get_by_personable(self, ingrediente_id:int) -> Ingrediente:
+        statement=(
+         select(Ingrediente)
+        .join(productoIngredienteLink)
+        .where(productoIngredienteLink.ingrediente_id == ingrediente_id)
+        .where(Ingrediente.is_active== True)
+        .where(productoIngredienteLink.es_removible==True)
+          )
+        return self.session.execute(statement).scalar_one_or_none() ##buscar ingredientes perzonalizables

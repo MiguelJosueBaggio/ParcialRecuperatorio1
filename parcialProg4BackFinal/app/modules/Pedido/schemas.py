@@ -7,7 +7,8 @@ class PedidoCreate(SQLModel):
     estado_codigo:str = Field( max_length=20)
     forma_pago_codigo:str = Field(max_length=20)    
     notas: Optional[str] = Field(default=None, max_length=500)      
-    detalles_pedido: Optional[List[int]] = Field(default=None, sa_columnkwargs={"type": "INTEGER[]"})
+    detalles_pedido: Optional[List[DetallePedidoCreate]] = None
+
 class PedidoUpdate(SQLModel):
     usuario_id: Optional[int] = None
     direccion_id: Optional[int] = None

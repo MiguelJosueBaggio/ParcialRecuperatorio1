@@ -3,6 +3,7 @@ from sqlmodel import Session
 
 from app.modules.Pedido.models import Pedido
 from app.modules.DetallePedido.models import DetallePedido
+
 from app.modules.Pedido.schemas import PedidoCreate, PedidoPublic, PedidoUpdate, PedidoList, DetallePedidoCreate, DetallePedidoPublic
 from app.modules.Pedido.unit_of_work import PedidoUnitofWork
 from app.modules.DetallePedido.unit_of_work import DetallePedidoUnitofWork
@@ -46,7 +47,7 @@ class PedidoService:
 
         return result
         ##obtener ingrediente del produto segun su id
-    def get_ingrediente_or_404(self,uow:ProductoUnitofWork, ingrediente_id:int):
+    def get_ingrediente_or_404(self,uow:PedidoUnitofWork, ingrediente_id:int):
         
         ingrediente = uow.ingredientes.get_by_id(ingrediente_id)
         if not ingrediente:
@@ -56,7 +57,7 @@ class PedidoService:
             )
         return ingrediente
     
-    def get_categoria_or_404(self,uow:ProductoUnitofWork, categoria_id:int):
+    def get_categoria_or_404(self,uow:PedidoUnitofWork, categoria_id:int):
         
         categoria = uow.categorias.get_by_id(categoria_id)
         if not categoria:
@@ -65,8 +66,14 @@ class PedidoService:
                 detail=f"categoria con id={categoria_id} no encontrado"
             )
         return categoria
-
-
+    def get_ingrediente_perosnalizables(self,uow:PedidoUnitofWork,ingrediente_id:int):  ##Obtener un ingrediente personalizable
+        ingrediente = uow.ingredientes.get_by_personable(ingrediente_id)
+        if not ingrediente:
+            raise HTTPException(
+                status_code=404,
+                detail=f"ingrediente con id ={ingrediente_id} no encontrado"
+            )
+        return ingrediente
 ##Obten buscar por id
 
     def get_by_id(self, pedido_id: int) -> PedidoPublic:
@@ -76,45 +83,60 @@ class PedidoService:
             result = PedidoPublic.model_validate(pedido)
 
         return result    
-    def crear_detalle_pedido(self,data1: DetallePedidoCreate)-> DetallePedidoPublic:
-        with DetallePedidoUnitofWork(self._session) as uow:
-            detalle_pedido= DetallePedido.model_validate(data1)
-            precio= uow.detalle_pedidos.obtener_precio_producto(detalle_pedido.producto_id)          ##El detallle pedoido debe ser creado dentro de pedido
-            detalle_pedido.subtotal_snap=detalle_pedido.cantidad*precio
+    def obtener_precio(self, producto_id):  ##fucion para obtener el precio de la bases de dtaos de producto
 
-            uow.detalle_pedidos.add(detalle_pedido)
-            result= DetallePedidoPublic.model_validate(detalle_pedido)
-            return result
+      with DetallePedidoUnitofWork(self._session) as uow:
 
+        return uow.detalle_pedidos.obtener_precio_producto(producto_id )
+            
+
+           
 
  
-##crea producto
+##crea pedido
 
-    def create(self, data: PedidoCreate) -> PedidoPublic:
+    def create(self, data: PedidoCreate,data2:DetallePedidoCreate) -> PedidoPublic:
         
        
         with PedidoUnitofWork(self._session) as uow:
            
-                pedido = Pedido.model_validate(data)    
+                pedido = Pedido.model_validate(data)  ##valido pedido a basee de datoos
+
+                pedido.detalles_pedido = []  ##paso la lista vacia
             
-             for ingrediente_id in data.ingrediente_ids: ##recoerre los ingredientes agregados
-                 ingrediente= self.get_ingrediente_or_404(uow,ingrediente_id)##si esta presemnete el ingrediente se guarga en ingrediente
-                 producto.ingredientes.append(ingrediente) ##guardamos el ingredeinte en ela lista que ira  a la base de datos
+                for detalle_pedido in data.detalles_pedido: ##recoerre los ingredientes agregados en el detalle create
+                 
+                    detalle_baseDatos= DetallePedido.model_validate(detalle_pedido) #Transforma el detalle pedid en datoas para la base
+
+                    precio= self.obtener_precio(detalle_pedido.producto_id) ##obtengo el precio mediante la fcucion
+                    detalle_baseDatos.precio_snapshot=precio ##cargo a la base de datos el valor de precio
+                    detalle_baseDatos.subtotal_snap=(precio*detalle_baseDatos.cantidad) ##Calcuñlo el subtotal y se guarda en bases de datos
+                    detalle_baseDatos.personalizacion=[] # dentor de cada detalle pedido puedo elegir ingredientes a perosnalizar
+                    for personalizado in data2.personalizacion: ##recooro la lista del detalle create que cargo el usuario
+                        removible= self.get_ingrediente_perosnalizables(uow,personalizado) ##uso la fucion para obtener el ingrediente reciebe como para parametro el entero que cargo el usuariioo
+                        detalle_baseDatos.personalizacion.append(removible) ## guardo en le lista de al basees de datos de los persoanlizables
+
+
+
+                  
+                   
+                 
+                    pedido.detalles_pedido.append(detalle_baseDatos)##guardamos el ingredeinte en ela lista que ira  a la base de datos
 
            
 
             
            
             
-           uow.productos.add(producto)
+                uow.pedidos.add(pedido)
 
             
-            result = ProductoPublic.model_validate(producto)
+                result = PedidoPublic.model_validate(pedido)
 
         return result
     
 
-    ###Modificador
+    ###Modificador####falta cooregir
     
     def update(self, producto_id: int, data: ProductoUpdate) -> ProductoPublic:
       with ProductoUnitofWork(self._session) as uow:
