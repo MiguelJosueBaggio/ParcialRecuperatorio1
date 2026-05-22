@@ -111,8 +111,8 @@ class PedidoService:
                     precio= self.obtener_precio(detalle_pedido.producto_id) ##obtengo el precio mediante la fcucion
                     detalle_baseDatos.precio_snapshot=precio ##cargo a la base de datos el valor de precio
                     detalle_baseDatos.subtotal_snap=(precio*detalle_baseDatos.cantidad) ##Calcuñlo el subtotal y se guarda en bases de datos
-                    detalle_baseDatos.personalizacion=[] # dentor de cada detalle pedido puedo elegir ingredientes a perosnalizar
-                    for personalizado in detalle_pedido.personalizacion: ##recooro la lista del detalle create que cargo el usuario
+                    detalle_baseDatos.personalizacion=[] # dentor de cada detalle pedido puedo elegir ingredientes a perosnalizar AGREGAR ARRIBA DE SNAPpRECIO
+                    for personalizado in detalle_pedido.personalizacion: ##recooro la lista del detalle create que cargo el usuario 
                         removible= self.get_ingrediente_perosnalizables(uow,personalizado) ##uso la fucion para obtener el ingrediente reciebe como para parametro el entero que cargo el usuariioo
                         detalle_baseDatos.personalizacion.append(removible) ## guardo en le lista de al basees de datos de los persoanlizables
 
@@ -138,44 +138,27 @@ class PedidoService:
 
     ###Modificador####falta cooregir
     
-    def update(self, producto_id: int, data: ProductoUpdate) -> ProductoPublic:
-      with ProductoUnitofWork(self._session) as uow:
-        producto = self._get_or_404(uow, producto_id)
+    def update(self, pedido_id: int, data: PedidoUpdate) -> PedidoPublic:
+      with PedidoUnitofWork(self._session) as uow:
+        pedido = self._get_or_404(uow, pedido_id)
 
-        # 🔹 Relación muchos a muchos: ingredientes
-        if data.ingrediente_ids is not None:
-            ingredientes = []
-
-            for ingrediente_id in data.ingrediente_ids:
-                ingrediente = self._get_ingrediente_or_404(uow, ingrediente_id)
-                ingredientes.append(ingrediente)
-
-            producto.ingredientes.clear()
-            producto.ingredientes.extend(ingredientes)
-
-        # 🔹 Categoría
-        if data.categoria_id is not None:
-            categoria = self._get_categoria_or_404(uow, data.categoria_id)
-            producto.categoria = categoria
+       
 
         # 🔹 Campos simples (excluyendo relaciones)
-        patch = data.model_dump(
-            exclude_unset=True,
-            exclude={"ingrediente_ids", "categoria_id"}
-        )
+        patch = data.model_dump
 
         for field, value in patch.items():
-            setattr(producto, field, value)
+            setattr(pedido, field, value)
 
-        uow.productos.add(producto)
+        uow.pedidos.add(pedido)
 
-      return ProductoPublic.model_validate(producto)
+      return PedidoPublic.model_validate(pedido)
 
 
     ##eliminar
-    def soft_delete(self, producto_id: int) -> None:
+    def soft_delete(self, pedido_id: int) -> None:
         
-        with ProductoUnitofWork(self._session) as uow:
-            producto= self.get_or_404(uow, producto_id)
-            producto.is_active = False
-            uow.productos.add(producto)
+        with PedidoUnitofWork(self._session) as uow:
+            pedido= self.get_or_404(uow, pedido_id)
+            pedido.is_active = False
+            uow.pedidos.add(pedido)
