@@ -17,15 +17,18 @@ from app.modules.usuarios.model import Usuario
 
 class UsuarioRepository(BaseRepository[Usuario]):
 
-    def __init__(self, session: Session):
-        super().__init__(Usuario, session)
-
-    def get_by_username(self, username: str) -> Usuario | None:
-        return self.session.exec(
-            select(Usuario).where(Usuario.username == username)
-        ).first()
+    def __init__(self, session: Session) -> None:
+        super().__init__(session, Usuario)  # orden correcto: session primero, luego model
 
     def get_by_email(self, email: str) -> Usuario | None:
         return self.session.exec(
             select(Usuario).where(Usuario.email == email)
         ).first()
+
+    def get_active(self, offset: int = 0, limit: int = 20) -> list[Usuario]:
+        return list(self.session.exec(
+            select(Usuario)
+            .where(Usuario.deleted_at == None)
+            .offset(offset)
+            .limit(limit)
+        ).all())
