@@ -25,3 +25,12 @@ class DetallePedidoRepository(BaseRepository[DetallePedido]):
             return producto.precio
         else:
             raise ValueError(f"Producto con id {producto_id} no encontrado")
+        
+    def obtener_stock_producto(self, producto_id:int)-> int:
+        statement = select(Producto).where(Producto.id == producto_id)             ##obtenemos stock  del prodocto para suincluirlo en snapshot precio 
+        producto = self.session.exec(statement).first()
+        if producto:
+            return producto.stock_cantidad
+        else:
+            raise ValueError(f"Producto con id {producto_id} no encontrado")
+         

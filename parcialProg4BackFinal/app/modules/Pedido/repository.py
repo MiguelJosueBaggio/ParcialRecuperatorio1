@@ -18,3 +18,12 @@ class PedidoRepository(BaseRepository[Pedido]):
         .limit(limit)
     )
         return list(self.session.exec(statement).all())
+    
+    def get_estado_pedido(self, estado_codigo: str, offset: int = 0, limit: int = 20) -> list[Pedido]:
+        statement = (
+        select(Pedido)
+        .where(Pedido.estado_codigo == estado_codigo)
+        .offset(offset)
+        .limit(limit)
+    )
+        return list(self.session.exec(statement).all())

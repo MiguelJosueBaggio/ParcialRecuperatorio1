@@ -69,7 +69,7 @@ class IngredienteService:
 
         return result    
     
- 
+    
 
 
     def create(self, data: IngredienteCreate) -> IngredientePublic:

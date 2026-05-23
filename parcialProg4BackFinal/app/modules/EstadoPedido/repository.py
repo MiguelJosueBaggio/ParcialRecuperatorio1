@@ -10,4 +10,6 @@ class EstadoPedidoRepository(BaseRepository[EstadoPedidoModel]):
     def get_by_codigo(self, codigo: str) -> EstadoPedidoModel | None:
         return self.session.exec(
             select(EstadoPedidoModel).where(EstadoPedidoModel.codigo == codigo)
-        ).first()   
+        ).first()
+
+     
