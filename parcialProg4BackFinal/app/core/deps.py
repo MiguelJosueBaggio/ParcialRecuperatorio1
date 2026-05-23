@@ -31,17 +31,16 @@ Arquitectura:
         * Modelo Usuario
 """
 
-from typing import Annotated  # Permite tipado enriquecido para Depends
+from typing import Annotated
 
-from fastapi import Depends, HTTPException, status  # Inyección y manejo de errores HTTP
-from fastapi.security import OAuth2PasswordBearer  # Manejo estándar de OAuth2 con Bearer
+from fastapi import Depends, HTTPException, Request, status
+from fastapi.security import OAuth2PasswordBearer
 
-from app.core.security import decode_access_token  # Función para decodificar JWT
-from app.core.unit_of_work import UnitOfWork, get_uow       # Patrón Unit of Work para DB
-from app.modules.usuarios.model import Usuario     # Modelo de dominio Usuario
-from app.modules.usuarios.model import UserPublic     # Modelo de dominio Usuario
-
-from fastapi import Request
+from app.core.security import decode_access_token
+from app.core.unit_of_work import UnitOfWork, get_uow
+from app.modules.usuarios.model import Usuario
+from app.modules.usuarios.schemas import UserPublic
+from app.modules.usuarios.repository import UsuarioRepository
 
 class OAuth2PasswordBearerWithCookie(OAuth2PasswordBearer):
     async def __call__(self, request: Request) -> str | None:
@@ -100,25 +99,28 @@ async def get_current_user(
     if payload is None:
         raise credentials_exception
 
-    # Extrae el "subject" (usuario) del token
-    username: str | None = payload.get("sub")
-    if username is None:
+  
+   # El sub ahora es el id del usuario (como string)
+    user_id_str: str | None = payload.get("sub")
+    if user_id_str is None:
+        raise credentials_exception
+
+    try:
+        user_id = int(user_id_str)
+    except ValueError:
         raise credentials_exception
 
     # Abre contexto de Unit of Work (manejo de sesión/transacción)
     with uow:
-        # Busca el usuario en base de datos
-        user = uow.usuarios.get_by_username(username)
-
-        # Si no existe el usuario → token inválido
-        if user is None:
+        repo = UsuarioRepository(uow._session)
+        user = repo.get_by_id(user_id)
+        if user is None or user.deleted_at is not None:
             raise credentials_exception
-
-        return UserPublic.model_validate(user)  # Usuario autenticado válido
+        return UserPublic.model_validate(user)
 
 
 async def get_current_active_user(
-    current_user: Annotated[Usuario, Depends(get_current_user)],
+    current_user: Annotated[UserPublic, Depends(get_current_user)],
 ) :
     """
     Verifica que el usuario autenticado esté activo.
@@ -152,22 +154,53 @@ def require_role(allowed_roles: list[str]):
     """
 
     async def role_checker(
-        current_user: Annotated[Usuario, Depends(get_current_active_user)],
-    ) -> Usuario:
-        """
-        Valida que el rol del usuario esté dentro de los permitidos.
-        """
+        token: Annotated[str, Depends(oauth2_scheme)],
+        uow: Annotated[UnitOfWork, Depends(get_uow)],
+    ) -> UserPublic:
+        from app.modules.Rol.repository import RolRepository
 
-        # Si el rol del usuario no está permitido → 403 (prohibido)
-        if current_user.role not in allowed_roles:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=(
-                    f"Permisos insuficientes. Tu rol es '{current_user.role}'. "
-                    f"Se requiere uno de: {allowed_roles}"
-                ),
-            )
+        credentials_exception = HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Credenciales inválidas o token expirado",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
-        return current_user  # Usuario autorizado
+        payload = decode_access_token(token)
+        if payload is None:
+            raise credentials_exception
 
-    return role_checker  # Retorna la dependencia configurada
+        user_id_str: str | None = payload.get("sub")
+        if user_id_str is None:
+            raise credentials_exception
+
+        try:
+            user_id = int(user_id_str)
+        except ValueError:
+            raise credentials_exception
+
+        with uow:
+            repo = UsuarioRepository(uow._session)
+            user = repo.get_by_id(user_id)
+
+            if user is None or user.deleted_at is not None:
+                raise credentials_exception
+
+            rol_repo = RolRepository(uow._session)
+
+            roles_usuario = [
+                r.codigo for r in rol_repo.get_roles_de_usuario(user_id)
+            ]
+
+            if not any(r in allowed_roles for r in roles_usuario):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=(
+                        f"Permisos insuficientes. Tus roles: "
+                        f"{roles_usuario}. "
+                        f"Se requiere uno de: {allowed_roles}"
+                    ),
+                )
+
+        return UserPublic.model_validate(user)
+
+    return role_checker
