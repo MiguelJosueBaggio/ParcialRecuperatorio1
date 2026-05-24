@@ -1,7 +1,7 @@
 from sqlmodel import Session
 from app.core.unit_of_work import UnitOfWork
 from app.modules.EstadoPedido.repository import EstadoPedidoRepository      
-from app.modules.Pedido.repository import ProductoRepository
+from app.modules.Producto.repository import ProductoRepository
 
 class EstadoPedidoUnitofWork(UnitOfWork):
     def __init__ (self, session:Session)-> None:

@@ -13,59 +13,54 @@ Crea:
 """
 
 from sqlmodel import Session, select
-from app.core.database import engine, create_all_tables
 from app.core.security import hash_password
 from app.modules.usuarios.model import Usuario
 
 
 USUARIOS_INICIALES = [
     {
-        "username":  "admin",
-        "full_name": "Administrador del Sistema",
-        "email":     "admin@example.com",
-        "password":  "Admin1234!",
-        "role":      "admin",
+        "nombre": "Admin",
+        "apellido": "Sistema",
+        "email": "admin@example.com",
+        "celular": "0000000000",
+        "password": "Admin1234!",
     },
     {
-        "username":  "juan",
-        "full_name": "Juan Pérez",
-        "email":     "juan@example.com",
-        "password":  "Juan1234!",
-        "role":      "user",
+        "nombre": "Juan",
+        "apellido": "Perez",
+        "email": "juan@example.com",
+        "celular": "1111111111",
+        "password": "Juan1234!",
     },
 ]
 
+def run(session: Session) -> None:
+    print("=== Seed Usuarios ===")
 
-def run() -> None:
-    print("=== Seed — Seguridad JWT (PostgreSQL) ===")
-    create_all_tables()
-
-    with Session(engine) as session:
-        for data in USUARIOS_INICIALES:
+    for data in USUARIOS_INICIALES:
+        try:
             existing = session.exec(
-                select(Usuario).where(Usuario.username == data["username"])
+                select(Usuario).where(Usuario.email == data["email"])
             ).first()
 
             if existing:
-                print(f"  [=] Ya existe: {data['username']} ({data['role']})")
-            else:
-                usuario = Usuario(
-                    username        = data["username"],
-                    full_name       = data["full_name"],
-                    email           = data["email"],
-                    hashed_password = hash_password(data["password"]),
-                    role            = data["role"],
-                )
-                session.add(usuario)
-                print(f"  [+] Creado:    {data['username']} / {data['password']}  (role={data['role']})")
+                print(f" [=] Ya existe: {data['email']}")
+                continue
 
-        session.commit()
+            usuario = Usuario(
+                nombre=data["nombre"],
+                apellido=data["apellido"],
+                email=data["email"],
+                celular=data["celular"],
+                password_hash=hash_password(data["password"]),
+            )
 
-    print("\nUsuarios disponibles para pruebas:")
-    print("  admin / Admin1234!  → role=admin  (acceso total)")
-    print("  juan  / Juan1234!   → role=user   (acceso básico)")
-    print()
+            session.add(usuario)
+            session.commit()   # 👈 commit por usuario
+            print(f" [+] Creado: {data['email']}")
 
+        except Exception as e:
+            session.rollback()
+            print(f" [!] Error con {data['email']}: {e}")
 
-if __name__ == "__main__":
-    run()
+    print("\nSeed completado.")

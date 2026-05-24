@@ -1,4 +1,6 @@
 from sqlmodel import Session
+from fastapi import Depends #agrgado para usar Depends en el router
+from app.core.database import get_session # función para obtener la sesión de base de datos
 
 
 class UnitOfWork:
@@ -64,3 +66,6 @@ class UnitOfWork:
         Ejecuta un rollback explícito de la transacción actual.
         """
         self._session.rollback()
+
+def get_uow(session: Session = Depends(get_session)):
+    return UnitOfWork(session)

@@ -1,7 +1,7 @@
 from sqlmodel import Session, select
 from app.core.repository import BaseRepository
 from app.modules.Producto.models import Producto
-from app.modules.DetallePedido import DetallePedido
+from app.modules.DetallePedido.models import DetallePedido
 
 
 class DetallePedidoRepository(BaseRepository[DetallePedido]):
@@ -22,10 +22,18 @@ class DetallePedidoRepository(BaseRepository[DetallePedido]):
         statement = select(Producto).where(Producto.id == producto_id)             ##obtenemos precio del prodocto para suincluirlo en snapshot precio 
         producto = self.session.exec(statement).first()
         if producto:
-            return producto.precio
+            return producto.precio_base
         else:
             raise ValueError(f"Producto con id {producto_id} no encontrado")
-        
+
+    def obtener_nombre_producto(self, producto_id: int) -> str:
+        statement = select(Producto).where(Producto.id == producto_id)             ##obtenemos nombre del prodocto para suincluirlo en snapshot nombre 
+        producto = self.session.exec(statement).first()
+        if producto:
+            return producto.nombre
+        else:
+            raise ValueError(f"Producto con id {producto_id} no encontrado")        
+
     def obtener_stock_producto(self, producto_id:int)-> int:
         statement = select(Producto).where(Producto.id == producto_id)             ##obtenemos stock  del prodocto para suincluirlo en snapshot precio 
         producto = self.session.exec(statement).first()

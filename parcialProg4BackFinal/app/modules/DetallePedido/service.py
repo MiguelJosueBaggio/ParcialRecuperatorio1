@@ -1,4 +1,4 @@
-from fastapi import HTTPException, status
+'''from fastapi import HTTPException, status
 from sqlmodel import Session
 
 from app.modules.DetallePedido.models import DetallePedido
@@ -143,4 +143,4 @@ class DetallePedidoService:
         with ProductoUnitofWork(self._session) as uow:
             producto= self.get_or_404(uow, producto_id)
             producto.is_active = False
-            uow.productos.add(producto)
+            uow.productos.add(producto)'''

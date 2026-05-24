@@ -5,7 +5,7 @@ from decimal import Decimal
 from datetime import datetime
 from sqlalchemy import Column, ForeignKey, Integer, ARRAY, TEXT
 from app.modules.Ingrediente.models import productoIngredienteLink
-from app.modules.DetallePedido.models import DetallePedido
+##from app.modules.DetallePedido.models import DetallePedido
 if TYPE_CHECKING: ##Evitar refercnias circualreas
     from app.modules.Ingrediente.models import Ingrediente
     from app.modules.Categoria.models import Categoria
@@ -17,7 +17,7 @@ class Producto (SQLModel,table=True):
     __tablename__= "producto"
 
     id: Optional[int]= Field(default=None, primary_key=True)
-    unidad_venta_id:  Optional[int] = Field(default=None, foreign_key="Unidad_medida.id")
+   ## unidad_venta_id:  Optional[int] = Field(default=None, foreign_key="Unidad_medida.id")
     nombre: str = Field(index=True)
     descripcion :Optional[str]= Field(default=None)
     precio_base: Decimal=Field(default=0.0,ge=0)

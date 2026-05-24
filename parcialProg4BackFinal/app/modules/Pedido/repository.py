@@ -1,7 +1,7 @@
 from sqlmodel import Session, select
 from app.core.repository import BaseRepository
 from app.modules.Producto.models import Producto
-from app.modules.DetallePedido import DetallePedido
+from app.modules.DetallePedido.models import DetallePedido
 from app.modules.Pedido.models import Pedido    
 
 class PedidoRepository(BaseRepository[Pedido]):
@@ -19,11 +19,11 @@ class PedidoRepository(BaseRepository[Pedido]):
     )
         return list(self.session.exec(statement).all())
     
-    def get_estado_pedido(self, estado_codigo: str, offset: int = 0, limit: int = 20) -> list[Pedido]:
+    def get_pedidos_by_estado(self, estado_codigo: str, offset: int = 0, limit: int = 20) -> list[Pedido]:
         statement = (
         select(Pedido)
         .where(Pedido.estado_codigo == estado_codigo)
         .offset(offset)
         .limit(limit)
     )
-        return list(self.session.exec(statement).all())
+        return self.session.exec(statement).all()

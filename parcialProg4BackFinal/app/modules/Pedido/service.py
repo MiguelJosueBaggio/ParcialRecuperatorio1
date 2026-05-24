@@ -91,7 +91,14 @@ class PedidoService:
       with DetallePedidoUnitofWork(self._session) as uow:
 
         return uow.detalle_pedidos.obtener_precio_producto(producto_id )
-      
+
+    def _obtener_nombre(self, producto_id):  ##fucion para obtener el nombre de la bases de dtaos de producto
+
+      with DetallePedidoUnitofWork(self._session) as uow:
+
+        return uow.detalle_pedidos.obtener_nombre_producto(producto_id )         
+    
+    
     def _restar_stock(self,uow:DetallePedidoUnitofWork,producto_id,cantidad) ->int:
         stock= uow.detalle_pedidos.obtener_stock_producto(producto_id)
         if stock is None:
@@ -109,9 +116,9 @@ class PedidoService:
         )
         
             
-    def listar_estados(self,estado_codigo,offset: int = 0, limit: int = 10)-> PedidoList:
+    def listar_pedidos_por_estado(self,estado_codigo,offset: int = 0, limit: int = 10)-> PedidoList:
         with PedidoUnitofWork (self._session) as uow:
-            lista_estados_pedidos = uow.get_estado_pedido(estado_codigo,offset=offset,
+            lista_estados_pedidos = uow.pedidos.get_pedidos_by_estado(estado_codigo,offset=offset,
                limit=limit)
             
         total = uow.pedidos.count()
@@ -136,18 +143,22 @@ class PedidoService:
        
         with PedidoUnitofWork(self._session) as uow:
            
-                pedido = Pedido.model_validate(data)  ##valido pedido a basee de datoos
+                pedido = Pedido (**data.model_dump(exclude={"detalles"}))  ##valido pedido a basee de datoos
 
-                pedido.detalles_pedido = []  ##paso la lista vacia
+                pedido.detalles = []  ##paso la lista vacia
             
-                for detalle_pedido in data.detalles_pedido: ##recoerre los ingredientes agregados en el detalle create
+                for detalle_pedido in data.detalles: ##recoerre los ingredientes agregados en el detalle create
                  
-                    detalle_baseDatos= DetallePedido.model_validate(detalle_pedido) #Transforma el detalle pedid en datoas para la base
+                    detalle_baseDatos= DetallePedido( producto_id=detalle_pedido.producto_id,
+                     cantidad=detalle_pedido.cantidad) #Transforma el detalle pedid en datoas para la base
 
                     precio= self.obtener_precio(detalle_pedido.producto_id) ##obtengo el precio mediante la fcucion
-
+                    nombre= self._obtener_nombre(detalle_pedido.producto_id) ##obtengo el nombre mediante la fcucion
+                    detalle_baseDatos.nombre_snapshot=nombre ##cargo a la base de datos el valor de nombre
                     detalle_baseDatos.precio_snapshot=precio ##cargo a la base de datos el valor de precio
-                    detalle_baseDatos.subtotal_snap=(precio*detalle_baseDatos.cantidad) ##Calcuñlo el subtotal y se guarda en bases de datos
+                    detalle_baseDatos.subtotal_snap=(precio*detalle_baseDatos.cantidad) 
+                    total_pedido=pedido.total + detalle_baseDatos.subtotal_snap ##calculo el total del pedido sumando el subtotal de cada detalle pedido
+                    ##Calcuñlo el subtotal y se guarda en bases de datos
                    ## if pedido.estado_pedido == "ENTREGADO":
                                                         ##    producto=uow.productos.get_by_id(detalle_baseDatos.producto_id)
 
@@ -156,20 +167,20 @@ class PedidoService:
                     detalle_baseDatos.personalizacion=[] # dentor de cada detalle pedido puedo elegir ingredientes a perosnalizar AGREGAR ARRIBA DE SNAPpRECIO
                     for personalizado in detalle_pedido.personalizacion: ##recooro la lista del detalle create que cargo el usuario 
                         removible= self.get_ingrediente_perosnalizables(uow,personalizado) ##uso la fucion para obtener el ingrediente reciebe como para parametro el entero que cargo el usuariioo
-                        detalle_baseDatos.personalizacion.append(removible) ## guardo en le lista de al basees de datos de los persoanlizables
+                        detalle_baseDatos.personalizacion.append(removible.id) ## guardo en le lista de al basees de datos de los persoanlizables
 
 
 
                   
                    
                  
-                    pedido.detalles_pedido.append(detalle_baseDatos)##guardamos el ingredeinte en ela lista que ira  a la base de datos
-
+                    pedido.detalles.append(detalle_baseDatos)##guardamos el ingredeinte en ela lista que ira  a la base de datos
+                       
            
 
             
            
-            
+                pedido.total = total_pedido ##cargo el total del pedido en la base de datos
                 uow.pedidos.add(pedido)
 
             
@@ -191,7 +202,7 @@ class PedidoService:
         patch = data.model_dump() ##TRANFORMO A DICCIONARO
 
         if patch.get("estado_codigo")=="ENTREGADO" and pedido.estado_codigo != "ENTREGADO": #EVALUO SI EL ESTADO ES ENTREGADO EN EL UPDATE Y ADMAS QUE EN LA BASE DE DATOS SEA DIFERENTE A ENTREGADA PARA EVITAR DESCUENTOS POR DUPLICADO
-            for detalle in pedido.detalles_pedido: ##BUSSCO EN TODOS LOS DETALLES
+            for detalle in pedido.detalles: ##BUSSCO EN TODOS LOS DETALLES
                 detalle.producto.stock_cantidad = self._restar_stock (uow,detalle.producto_id,detalle.cantidad) #APLICO LA FORMULA DE DESCONTAR PEDIDO
             
 

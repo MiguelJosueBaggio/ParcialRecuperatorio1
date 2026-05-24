@@ -1,9 +1,14 @@
 
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from datetime import datetime
-from sqlmodel import SQLModel, Field
+from sqlmodel import SQLModel, Field, Relationship
 from sqlalchemy import Column, DateTime, func
 
+
+
+if TYPE_CHECKING:
+    from app.modules.Rol.models import Rol
+    from Direccion_Entrega.models import Direccion
 
 class Usuario(SQLModel, table=True):
     __tablename__ = "usuario"
@@ -14,7 +19,13 @@ class Usuario(SQLModel, table=True):
     apellido: str = Field(max_length=80, nullable=False)
     email: str = Field(max_length=254, index=True, unique=True, nullable=False)
     celular: Optional[str] = Field(default=None, max_length=20)
-    password_hash: str = Field(max_length=60, nullable=False)
+    password_hash: str = Field(max_length=250, nullable=False)
+    
+
+    direcciones: list["Direccion"] = Relationship(
+    back_populates="usuario"
+)
+
 
     # Soft delete
     deleted_at: Optional[datetime] = Field(

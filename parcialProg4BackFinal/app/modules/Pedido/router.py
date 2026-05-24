@@ -44,12 +44,14 @@ def list_pedidos(
 
 
 
-@router.get("/estados", response_model=list[str], summary="Listar estados de pedidos")
-def listar_estados(
+@router.get("/{estado_codigo}", response_model=PedidoList, summary="Listar pedidos por estado")
+def listar_pedidos_por_estado(
+    estado_codigo: str,
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=100),       
     svc: PedidoService = Depends(get_pedido_service),
 ):
-    return svc.listar_estados()
-
+    return svc.listar_pedidos_por_estado(estado_codigo, offset=offset, limit=limit)    
 
 
 

@@ -4,7 +4,11 @@ from sqlalchemy import Column, ForeignKey, Integer
 from decimal import Decimal
 from datetime import datetime
 from sqlalchemy import Column, ForeignKey, Integer, ARRAY, TEXT
-from app.modules.Producto.models import Producto
+from sqlalchemy import Column
+from sqlalchemy.dialects.postgresql import ARRAY
+
+
+##from app.modules.Producto.models import Producto
 if TYPE_CHECKING: ##Evitar refercnias circualreas
     from app.modules.Producto.models import Producto
     from app.modules.Pedido.models import Pedido
@@ -17,10 +21,19 @@ class DetallePedido (SQLModel,table=True):
  producto_id: Optional[int] = Field(default=None, foreign_key="producto.id")
  producto: Optional["Producto"] = Relationship(back_populates="detalles_pedido")
  pedido_id: Optional[int] = Field(default=None, foreign_key="pedido.id")
+ pedido: Optional["Pedido"] = Relationship(
+    back_populates="detalles"
+)
+ 
  cantidad: int = Field(default=1, ge=1)
  nombre_snapshot: str = Field(nullable=False, max_length=200)
  precio_snapshot: Decimal = Field(nullable=False, ge=0)
  subtotal_snap: Decimal = Field(nullable=False, ge=0)
- personalizacion: Optional[List[int]] = Field(default=None, sa_columnkwargs={"type": "INTEGER[]"})
+ 
+ personalizacion: Optional[List[int]] = Field(
+    default=None,
+    sa_column=Column(ARRAY(Integer))
+)
+
  created_at: datetime = Field(default_factory=datetime.utcnow)
  is_active: bool = Field(default=True)

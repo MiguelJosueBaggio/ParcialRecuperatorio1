@@ -23,7 +23,7 @@ from passlib.context import CryptContext
 # Configuración central (SECRET_KEY, ALGORITHM, expiración, etc.)
 from app.core.config import settings
 
-
+import hashlib
 # ─────────────────────────────────────────────────────────────────────────────
 # HASHING DE CONTRASEÑAS (bcrypt)
 # ─────────────────────────────────────────────────────────────────────────────
@@ -31,7 +31,7 @@ from app.core.config import settings
 # Configura el contexto de hashing:
 # - "bcrypt" → algoritmo seguro para contraseñas
 # - deprecated="auto" → permite migraciones futuras de algoritmo
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["sha256_crypt"], deprecated="auto")
 
 
 def hash_password(plain: str) -> str:
@@ -42,7 +42,10 @@ def hash_password(plain: str) -> str:
     - bcrypt incluye salt automáticamente
     - cada hash generado para el mismo input es distinto
     """
-    return pwd_context.hash(plain)
+   
+    
+
+    return pwd_context.hash(plain) 
 
 
 def verify_password(plain: str, hashed: str) -> bool:
@@ -54,6 +57,7 @@ def verify_password(plain: str, hashed: str) -> bool:
     - Recalcula el hash
     - Compara de forma segura (timing-attack safe)
     """
+   
     return pwd_context.verify(plain, hashed)
 
 

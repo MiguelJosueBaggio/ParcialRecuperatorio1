@@ -6,7 +6,7 @@ from datetime import datetime
 if TYPE_CHECKING:
     from app.modules.DetallePedido.models import DetallePedido
     from app.modules.EstadoPedido.models import EstadoPedidoModel
-
+    from app.modules.usuarios.model import Usuario
 
 class Pedido(SQLModel, table=True):
     __tablename__ = "pedido"
@@ -18,20 +18,18 @@ class Pedido(SQLModel, table=True):
         foreign_key="usuario.id"
     )
 
-    direccion_id: Optional[int] = Field(
-        default=None,
-        foreign_key="direccion.id"
-    )
+   # direccion_id: Optional[int] = Field(
+      #  default=None,
+       # foreign_key="direccion.id")
 
     estado_codigo: str = Field(
         foreign_key="estado_pedido.codigo",
         max_length=20
     )
 
-    forma_pago_codigo: str = Field(
-        foreign_key="forma_pago.codigo",
-        max_length=20
-    )
+   # forma_pago_codigo: str = Field(
+    #    foreign_key="forma_pago.codigo",
+     #   max_length=20)
 
     subtotal: Decimal = Field(default=0.0, ge=0)
     descuento: Decimal = Field(default=0.0, ge=0)
@@ -53,7 +51,7 @@ class Pedido(SQLModel, table=True):
 
     is_active: bool = Field(default=True)
 
-    detalles_pedido: List["DetallePedido"] = Relationship(
+    detalles: List["DetallePedido"] = Relationship(
         back_populates="pedido"
     )
 
