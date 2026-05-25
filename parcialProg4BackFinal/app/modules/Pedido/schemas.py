@@ -38,7 +38,7 @@ class PedidoCreate(SQLModel):
     usuario_id: Optional[int] = None
  #   direccion_id: Optional[int] = None
     estado_codigo:str = Field( max_length=20)
-  #  forma_pago_codigo:str = Field(max_length=20)    
+    forma_pago_codigo:str = Field(max_length=20)    
     notas: Optional[str] = Field(default=None, max_length=500)      
    
 
@@ -48,7 +48,7 @@ class PedidoUpdate(SQLModel):
     usuario_id: Optional[int] = None
   #  direccion_id: Optional[int] = None
     estado_codigo: Optional[str] = Field(default=None, max_length=20)
-  #  forma_pago_codigo: Optional[str] = Field(default=None, max_length=20)    
+    forma_pago_codigo: Optional[str] = Field(default=None, max_length=20)    
     notas: Optional[str] = Field(default=None, max_length=500) 
     is_active: Optional[bool]= None
 
@@ -57,7 +57,7 @@ class PedidoPublic(SQLModel):
     usuario_id: Optional[int] = None
    # direccion_id: Optional[int] = None
     estado_codigo:str = Field( max_length=20)
-  #  forma_pago_codigo:str = Field(max_length=20)    
+    forma_pago_codigo:str = Field(max_length=20)    
     subtotal: Decimal = Field(default=0.0, ge=0)
     descuento: Decimal = Field(default=0.0, ge=0)
     total: Decimal = Field(default=0.0, ge=0)

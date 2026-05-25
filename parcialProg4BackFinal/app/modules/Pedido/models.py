@@ -7,6 +7,7 @@ if TYPE_CHECKING:
     from app.modules.DetallePedido.models import DetallePedido
     from app.modules.EstadoPedido.models import EstadoPedidoModel
     from app.modules.usuarios.model import Usuario
+    from app.modules.FormaPago.models import FormaPago
 
 class Pedido(SQLModel, table=True):
     __tablename__ = "pedido"
@@ -27,9 +28,9 @@ class Pedido(SQLModel, table=True):
         max_length=20
     )
 
-   # forma_pago_codigo: str = Field(
-    #    foreign_key="forma_pago.codigo",
-     #   max_length=20)
+    forma_pago_codigo: str = Field(
+       foreign_key="forma_pago.codigo",
+       max_length=20)
 
     subtotal: Decimal = Field(default=0.0, ge=0)
     descuento: Decimal = Field(default=0.0, ge=0)
@@ -58,3 +59,6 @@ class Pedido(SQLModel, table=True):
     estado_pedido: Optional["EstadoPedidoModel"] = Relationship(
         back_populates="pedidos"
     )
+    forma_pago: Optional["FormaPago"] = Relationship(
+    back_populates="pedidos"
+)
