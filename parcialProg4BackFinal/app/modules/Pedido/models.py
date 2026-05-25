@@ -32,10 +32,9 @@ class Pedido(SQLModel, table=True):
        foreign_key="forma_pago.codigo",
        max_length=20)
 
-    subtotal: Decimal = Field(default=0.0, ge=0)
-    descuento: Decimal = Field(default=0.0, ge=0)
-    total: Decimal = Field(default=0.0, ge=0)
-
+    subtotal: Decimal = Field(default=Decimal("0.00"), ge=0)
+    descuento: Decimal = Field(default=Decimal("0.00"), ge=0)
+    total: Decimal = Field(default=Decimal("0.00"), ge=0)
     notas: Optional[str] = Field(
         default=None,
         max_length=500

@@ -1,6 +1,6 @@
 from fastapi import HTTPException, status
 from sqlmodel import Session
-
+from decimal import Decimal
 from app.modules.Pedido.models import Pedido
 from app.modules.DetallePedido.models import DetallePedido
 
@@ -157,7 +157,7 @@ class PedidoService:
                     detalle_baseDatos.nombre_snapshot=nombre ##cargo a la base de datos el valor de nombre
                     detalle_baseDatos.precio_snapshot=precio ##cargo a la base de datos el valor de precio
                     detalle_baseDatos.subtotal_snap=(precio*detalle_baseDatos.cantidad) 
-                    total_pedido=pedido.total + detalle_baseDatos.subtotal_snap ##calculo el total del pedido sumando el subtotal de cada detalle pedido
+                    total_pedido = Decimal(str(pedido.total)) + detalle_baseDatos.subtotal_snap ##calculo el total del pedido sumando el subtotal de cada detalle pedido
                     ##Calcuñlo el subtotal y se guarda en bases de datos
                    ## if pedido.estado_pedido == "ENTREGADO":
                                                         ##    producto=uow.productos.get_by_id(detalle_baseDatos.producto_id)

@@ -4,7 +4,7 @@ from sqlalchemy import Column, ForeignKey, Integer
 from decimal import Decimal
 if TYPE_CHECKING:
     from app.modules.Producto.models import Producto
-
+    from app.modules.UnidadMedida.models import UnidadMedida
                                                       
 class productoIngredienteLink(SQLModel, table=True):
 
