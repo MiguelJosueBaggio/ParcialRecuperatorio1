@@ -14,13 +14,14 @@ Regla de imports:
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status, Response
+from fastapi import APIRouter, Depends, status, Response, Request
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.core.unit_of_work import UnitOfWork, get_uow
 from app.core.deps import get_current_active_user
 from app.modules.usuarios.schemas import UserCreate, UserPublic
 from app.modules.usuarios.service import UsuarioService
+from app.modules.RefreshToken.service import RefreshTokenService
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
 
@@ -49,8 +50,10 @@ def login(
 ):
     with uow:
         service = UsuarioService(uow)
-        # form_data.username contiene el email (el campo se llama username por estándar OAuth2)
         token = service.authenticate(form_data.username, form_data.password)
+        usuario = uow.usuarios.get_by_email(form_data.username)
+        rt_service = RefreshTokenService(uow)
+        refresh_token_raw = rt_service.crear_refresh_token(usuario.id)
 
     response.set_cookie(
         key="access_token",
@@ -60,18 +63,69 @@ def login(
         samesite="lax",
         secure=False,  # True en producción con HTTPS
     )
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token_raw,
+        httponly=True,
+        max_age=60 * 60 * 24 * 30,
+        samesite="lax",
+        secure=False,
+        path="/api/v1/auth/refresh",
+    )
     return {"mensaje": "Login exitoso. Sesión iniciada."}
 
+# ── Refresh Token ─────────────────────────────────────────────────────────────
+
+@router.post("/refresh")
+def refresh(
+    request: Request,
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
+    response: Response,
+):
+    refresh_token_raw = request.cookies.get("refresh_token")
+
+    if not refresh_token_raw:
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="No hay refresh token — iniciá sesión nuevamente",
+        )
+
+    with uow:
+        rt_service = RefreshTokenService(uow)
+        nuevo_token = rt_service.renovar_access_token(refresh_token_raw)
+
+    response.set_cookie(
+        key="access_token",
+        value=nuevo_token.access_token,
+        httponly=True,
+        max_age=nuevo_token.expires_in,
+        samesite="lax",
+        secure=False,
+    )
+    return {"mensaje": "Access token renovado exitosamente"}
 
 # ── Logout ────────────────────────────────────────────────────────────────────
 
-@router.post("/logout")
-def logout(response: Response):
+router.post("/logout")
+def logout(
+    request: Request,
+    uow: Annotated[UnitOfWork, Depends(get_uow)],
+    response: Response,
+):
+    refresh_token_raw = request.cookies.get("refresh_token")
+
+    if refresh_token_raw:
+        with uow:
+            rt_service = RefreshTokenService(uow)
+            rt_service.revocar_token(refresh_token_raw)
+
+    response.delete_cookie(key="access_token", httponly=True, samesite="lax")
     response.delete_cookie(
-        key="access_token",
+        key="refresh_token",
         httponly=True,
         samesite="lax",
-        secure=False,
+        path="/api/v1/auth/refresh",
     )
     return {"mensaje": "Sesión cerrada exitosamente"}
 

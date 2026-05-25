@@ -17,21 +17,15 @@ class Pedido(SQLModel, table=True):
         default=None,
         foreign_key="usuario.id"
     )
-
-    direccion_id: Optional[int] = Field(
-        default=None,
-        foreign_key="direccion.id"
-    )
+    
+    direccion_id: Optional[int] = Field(default=None)#cambiar cuando esté la tabla direccion
 
     estado_codigo: str = Field(
         foreign_key="estado_pedido.codigo",
         max_length=20
     )
 
-    forma_pago_codigo: str = Field(
-        foreign_key="forma_pago.codigo",
-        max_length=20
-    )
+    forma_pago_codigo: Optional[str] = Field(default=None, max_length=20) #cambiar cuando esté la tabla forma_pago
 
     subtotal: Decimal = Field(default=0.0, ge=0)
     descuento: Decimal = Field(default=0.0, ge=0)
@@ -53,9 +47,7 @@ class Pedido(SQLModel, table=True):
 
     is_active: bool = Field(default=True)
 
-    detalles_pedido: List["DetallePedido"] = Relationship(
-        back_populates="pedido"
-    )
+    detalles_pedido: List["DetallePedido"] = Relationship(back_populates="pedido")
 
     estado_pedido: Optional["EstadoPedidoModel"] = Relationship(
         back_populates="pedidos"

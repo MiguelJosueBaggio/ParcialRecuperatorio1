@@ -121,22 +121,8 @@ async def get_current_user(
 
 async def get_current_active_user(
     current_user: Annotated[UserPublic, Depends(get_current_user)],
-) :
-    """
-    Verifica que el usuario autenticado esté activo.
-
-    Regla de negocio:
-    - Un usuario con disabled=True no puede operar
-    """
-
-    if current_user.disabled:
-        # Error semántico: el usuario existe pero no puede operar
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cuenta de usuario desactivada",
-        )
-
-    return UserPublic.model_validate(current_user) # Usuario válido y activo
+) -> UserPublic:
+    return current_user
 
 
 def require_role(allowed_roles: list[str]):
