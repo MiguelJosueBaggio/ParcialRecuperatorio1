@@ -26,8 +26,8 @@ class CategoriaPublic(SQLModel):
     
     id: int
     nombre:str
-    descripcion:str
-    imagen_url:str
+    descripcion: Optional[str] = None
+    imagen_url: Optional[str] = None
     parent_id: Optional[int] = None
     is_active: bool 
     subcategorias: List["CategoriaPublic"] = []

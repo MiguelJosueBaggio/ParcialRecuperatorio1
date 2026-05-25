@@ -1,5 +1,5 @@
-fastapi[standasrd]
+fastapi[standard]
 uvicorn
 sqlmodel
-psycopg2-binary
+psycopg[binary]
 python-dotenv
