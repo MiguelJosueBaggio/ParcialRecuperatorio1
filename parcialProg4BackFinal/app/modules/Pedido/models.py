@@ -8,7 +8,7 @@ if TYPE_CHECKING:
     from app.modules.EstadoPedido.models import EstadoPedidoModel
     from app.modules.usuarios.model import Usuario
     from app.modules.FormaPago.models import FormaPago
-
+    from app.modules.Direccion_Entrega.models import Direccion  
 class Pedido(SQLModel, table=True):
     __tablename__ = "pedido"
 
@@ -19,9 +19,11 @@ class Pedido(SQLModel, table=True):
         foreign_key="usuario.id"
     )
 
-   # direccion_id: Optional[int] = Field(
-      #  default=None,
-       # foreign_key="direccion.id")
+    direccion_id: Optional[int] = Field(
+        default=None,
+        foreign_key="direccion.id")
+    
+
 
     estado_codigo: str = Field(
         foreign_key="estado_pedido.codigo",
@@ -60,4 +62,8 @@ class Pedido(SQLModel, table=True):
     )
     forma_pago: Optional["FormaPago"] = Relationship(
     back_populates="pedidos"
-)
+)   
+    
+    usuario: Optional["Usuario"] = Relationship(back_populates="pedidos")
+
+    direccion: Optional["Direccion"] = Relationship(back_populates="pedidos")

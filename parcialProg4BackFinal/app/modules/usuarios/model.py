@@ -1,5 +1,5 @@
 
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, List
 from datetime import datetime
 from sqlmodel import SQLModel, Field, Relationship
 from sqlalchemy import Column, DateTime, func
@@ -9,7 +9,7 @@ from sqlalchemy import Column, DateTime, func
 if TYPE_CHECKING:
     from app.modules.Rol.models import Rol
     from Direccion_Entrega.models import Direccion
-
+    from app.modules.Pedido.models import Pedido
 class Usuario(SQLModel, table=True):
     __tablename__ = "usuario"
 
@@ -26,6 +26,7 @@ class Usuario(SQLModel, table=True):
     back_populates="usuario"
 )
 
+    pedidos: List["Pedido"] = Relationship(back_populates="usuario")
 
     # Soft delete
     deleted_at: Optional[datetime] = Field(

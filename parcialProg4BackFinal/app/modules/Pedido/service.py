@@ -159,10 +159,8 @@ class PedidoService:
                     detalle_baseDatos.subtotal_snap=(precio*detalle_baseDatos.cantidad) 
                     total_pedido = Decimal(str(pedido.total)) + detalle_baseDatos.subtotal_snap ##calculo el total del pedido sumando el subtotal de cada detalle pedido
                     ##Calcuñlo el subtotal y se guarda en bases de datos
-                   ## if pedido.estado_pedido == "ENTREGADO":
-                                                        ##    producto=uow.productos.get_by_id(detalle_baseDatos.producto_id)
-
-                                                          ##  producto.stock_cantidad = self._restar_stock(uow,detalle_baseDatos.producto_id,detalle_baseDatos.cantidad)##restar stock
+                    if data.estado_codigo=="ENTREGADO" and pedido.estado_codigo!="ENTREGADO": ##si el estado del pedido es entregado se descuenta el stock
+                        detalle_baseDatos.producto.stock_cantidad = self._restar_stock(uow,detalle_pedido.producto_id,detalle_pedido.cantidad)##restar stock
                    
                     detalle_baseDatos.personalizacion=[] # dentor de cada detalle pedido puedo elegir ingredientes a perosnalizar AGREGAR ARRIBA DE SNAPpRECIO
                     for personalizado in detalle_pedido.personalizacion: ##recooro la lista del detalle create que cargo el usuario 
@@ -199,7 +197,7 @@ class PedidoService:
        
 
         # 🔹 Campos simples (excluyendo relaciones)
-        patch = data.model_dump() ##TRANFORMO A DICCIONARO
+        patch = {k: v for k, v in data.model_dump(exclude_unset=True).items() if v not in (None, "")} ##TRANFORMO A DICCIONARO filtra los campos que no se han enviado en el update o que son nulos o vacios
 
         if patch.get("estado_codigo")=="ENTREGADO" and pedido.estado_codigo != "ENTREGADO": #EVALUO SI EL ESTADO ES ENTREGADO EN EL UPDATE Y ADMAS QUE EN LA BASE DE DATOS SEA DIFERENTE A ENTREGADA PARA EVITAR DESCUENTOS POR DUPLICADO
             for detalle in pedido.detalles: ##BUSSCO EN TODOS LOS DETALLES
@@ -209,7 +207,7 @@ class PedidoService:
         for field, value in patch.items():
             setattr(pedido, field, value)
         
-      
+        
 
         uow.pedidos.add(pedido)
       
@@ -222,6 +220,6 @@ class PedidoService:
     def soft_delete(self, pedido_id: int) -> None:
         
         with PedidoUnitofWork(self._session) as uow:
-            pedido= self.get_or_404(uow, pedido_id)
+            pedido= self._get_or_404(uow, pedido_id)
             pedido.is_active = False
             uow.pedidos.add(pedido)
