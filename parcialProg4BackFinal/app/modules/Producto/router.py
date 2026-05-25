@@ -3,6 +3,7 @@ from sqlmodel import Session
 from app.core.database import get_session
 from app.modules.Producto.service import ProductoService
 from app.modules.Producto.schemas import ProductoCreate,ProductoUpdate,ProductoPublic,ProductoList
+from typing import Optional
    
 
 router = APIRouter()
@@ -37,9 +38,10 @@ def create_ingrediente(
 def list_ingredientes(
     offset: int = Query(default=0, ge=0),
     limit: int = Query(default=20, ge=1, le=100),
+    categoria_id: Optional[int] = Query(default=None),
     svc: ProductoService = Depends(get_producto_service),
 ) -> ProductoList:
-    return svc.get_all(offset=offset, limit=limit)
+    return svc.get_all(offset=offset, limit=limit, categoria_id=categoria_id)
 
 ##OBTENER INGREDIENTES POR ID
 @router.get(

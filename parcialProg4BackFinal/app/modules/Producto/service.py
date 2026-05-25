@@ -1,5 +1,6 @@
 from fastapi import HTTPException, status
 from sqlmodel import Session
+from typing import Optional
 
 from app.modules.Producto.models import Producto
 from app.modules.Producto.schemas import ProductoCreate,ProductoUpdate,ProductoPublic,ProductoList
@@ -25,11 +26,12 @@ class ProductoService:
         return producto
    
     ###Obtenemos los activos
-    def get_all(self, offset: int = 0, limit: int = 10) -> ProductoList:
+    def get_all(self, offset: int = 0, limit: int = 10, categoria_id: Optional[int] = None) -> ProductoList:
         with ProductoUnitofWork(self._session) as uow:
             productos = uow.productos.get_active(
               offset=offset,
-               limit=limit
+                limit=limit,
+                categoria_id=categoria_id
         )
 
         total = uow.productos.count()
