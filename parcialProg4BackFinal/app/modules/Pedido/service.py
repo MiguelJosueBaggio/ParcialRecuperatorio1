@@ -98,6 +98,11 @@ class PedidoService:
 
         return uow.detalle_pedidos.obtener_nombre_producto(producto_id )         
     
+    def obtener_cantidad_detalles_pedido(self, pedido_id):  ##fucion para obtener el nombre de la bases de dtaos de producto
+
+      with DetallePedidoUnitofWork(self._session) as uow:
+
+        return uow.detalle_pedidos.get_cantidad_detalles_pedido(pedido_id ) 
     
     def _restar_stock(self,uow:DetallePedidoUnitofWork,producto_id,cantidad) ->int:
         stock= uow.detalle_pedidos.obtener_stock_producto(producto_id)
@@ -159,9 +164,11 @@ class PedidoService:
                     detalle_baseDatos.subtotal_snap=(precio*detalle_baseDatos.cantidad) 
                     total_pedido = Decimal(str(pedido.total)) + detalle_baseDatos.subtotal_snap ##calculo el total del pedido sumando el subtotal de cada detalle pedido
                     ##Calcuñlo el subtotal y se guarda en bases de datos
-                    if data.estado_codigo=="ENTREGADO" and pedido.estado_codigo!="ENTREGADO": ##si el estado del pedido es entregado se descuenta el stock
-                        detalle_baseDatos.producto.stock_cantidad = self._restar_stock(uow,detalle_pedido.producto_id,detalle_pedido.cantidad)##restar stock
-                   
+                    if data.estado_codigo=="ENTREGADO" : ##si el estado del pedido es entregado se descuenta el stock
+                        nuevo_stock = self._restar_stock(uow,detalle_pedido.producto_id,detalle_pedido.cantidad)##restar stock
+                        producto = uow.productos.get_by_id(detalle_pedido.producto_id) ##obtener producto
+                        producto.stock_cantidad = nuevo_stock
+                        uow.commit() ##guardo el cambio en la base de datos
                     detalle_baseDatos.personalizacion=[] # dentor de cada detalle pedido puedo elegir ingredientes a perosnalizar AGREGAR ARRIBA DE SNAPpRECIO
                     for personalizado in detalle_pedido.personalizacion: ##recooro la lista del detalle create que cargo el usuario 
                         removible= self.get_ingrediente_perosnalizables(uow,personalizado) ##uso la fucion para obtener el ingrediente reciebe como para parametro el entero que cargo el usuariioo
@@ -201,8 +208,10 @@ class PedidoService:
 
         if patch.get("estado_codigo")=="ENTREGADO" and pedido.estado_codigo != "ENTREGADO": #EVALUO SI EL ESTADO ES ENTREGADO EN EL UPDATE Y ADMAS QUE EN LA BASE DE DATOS SEA DIFERENTE A ENTREGADA PARA EVITAR DESCUENTOS POR DUPLICADO
             for detalle in pedido.detalles: ##BUSSCO EN TODOS LOS DETALLES
-                detalle.producto.stock_cantidad = self._restar_stock (uow,detalle.producto_id,detalle.cantidad) #APLICO LA FORMULA DE DESCONTAR PEDIDO
-            
+                nuevo_stock = self._restar_stock (uow,detalle.producto_id,detalle.cantidad) #APLICO LA FORMULA DE DESCONTAR PEDIDO
+                producto = uow.productos.get_by_id(detalle.producto_id)
+                producto.stock_cantidad = nuevo_stock
+                uow.commit() ##GUARDO LOS CAMBIOS EN LA BASE DE DATOS
 
         for field, value in patch.items():
             setattr(pedido, field, value)
