@@ -1,100 +1,229 @@
-"""
-Service de Usuario — lógica de negocio.
-
-Stateless, orquesta operaciones sobre los repositorios a través del UoW.
-Lanza HTTPException. No hace commit/rollback directamente.
-
-Capa: Service
-Conoce a: UoW, Repository (indirectamente vía UoW)
-NO conoce a: Router
-
-Regla de imports:
-    Router → Service → UoW → Repository → Model
-"""
-
+from datetime import datetime, timezone
+from sqlmodel import Session
 from fastapi import HTTPException, status
 
 from app.core.config import settings
-from app.core.security import hash_password, verify_password, create_access_token
-from app.core.unit_of_work import UnitOfWork
+from app.core.security import (
+    hash_password,
+    verify_password,
+    create_access_token
+)
+from app.modules.usuarios.unit_of_work import UsuarioUnitofWork
+
 from app.modules.usuarios.model import Usuario
-from app.modules.usuarios.schemas import UserCreate, Token, UserPublic
+from app.modules.usuarios.schemas import (
+    UserCreate,
+    UserPublic,
+    Token
+)
+
+from app.modules.Direccion_Entrega.models import Direccion
+from app.modules.Direccion_Entrega.schema import DireccionUpdate
 
 
 class UsuarioService:
-    """Lógica de negocio para autenticación y gestión de usuarios."""
 
-    """Lógica de negocio para autenticación y gestión de usuarios."""
+    def __init__(self, session: Session):
+        self._session = session
 
-    def __init__(self, uow: UnitOfWork) -> None:
-        self.uow = uow
+    # ---------------- HELPERS ----------------
 
-    # ── Helpers ──────────────────────────────────────────────────────────────
+    def _get_or_404(self, uow, user_id: int) -> Usuario:
 
-    def _get_or_404(self, user_id: int) -> Usuario:
-        user = self.uow.usuarios.get_by_id(user_id)
-        if not user:
+        usuario = uow.usuarios.get_by_id(user_id)
+
+        if not usuario:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Usuario con id={user_id} no encontrado",
+                status_code=404,
+                detail=f"Usuario {user_id} no encontrado"
             )
-        return user
 
-    # ── Operaciones ──────────────────────────────────────────────────────────
+        return usuario
+
+    # ---------------- REGISTER ----------------
 
     def register(self, user_in: UserCreate) -> UserPublic:
-        """Registra un nuevo usuario. El rol CLIENT se asigna automáticamente."""
-        if self.uow.usuarios.get_by_email(user_in.email):
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="El email ya está registrado",
+
+        with UsuarioUnitofWork(self._session) as uow:
+
+            if uow.usuarios.get_by_email(user_in.email):
+                raise HTTPException(
+                    status_code=409,
+                    detail="El email ya está registrado"
+                )
+
+            usuario = Usuario(
+                nombre=user_in.nombre,
+                apellido=user_in.apellido,
+                email=user_in.email,
+                celular=user_in.celular,
+                password_hash=hash_password(user_in.password)
             )
 
-        usuario = Usuario(
-            nombre=user_in.nombre,
-            apellido=user_in.apellido,
-            email=user_in.email,
-            celular=user_in.celular,
-            password_hash=hash_password(user_in.password),
-        )
+            usuario.direcciones = []
 
-        creado = self.uow.usuarios.add(usuario)
-        return UserPublic.model_validate(creado)
+            for direccion in user_in.direcciones:
 
-    def authenticate(self, email: str, password: str) -> Token:
-        """Autentica con email + password y retorna un Token JWT."""
-        user = self.uow.usuarios.get_by_email(email)
+                nueva_direccion = Direccion(
+                    alias=direccion.alias,
+                    linea1=direccion.linea1,
+                    linea2=direccion.linea2,
+                    ciudad=direccion.ciudad,
+                    provincia=direccion.provincia,
+                    codigo_postal=direccion.codigo_postal,
+                    es_principal=direccion.es_principal
+                )
 
-        if not user or not verify_password(password, user.password_hash):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Credenciales incorrectas",
-                headers={"WWW-Authenticate": "Bearer"},
+                # NO pongas usuario_id manualmente
+                # SQLAlchemy lo hace por la relación
+
+                usuario.direcciones.append(
+                    nueva_direccion
+                )
+
+            creado = uow.usuarios.add(usuario)
+
+            uow.commit()
+
+            return UserPublic.model_validate(creado)
+
+    # ---------------- LOGIN ----------------
+
+    def authenticate(
+        self,
+        email:str,
+        password:str
+    ) -> Token:
+
+        with UsuarioUnitofWork(self._session) as uow:
+
+            user = uow.usuarios.get_by_email(email)
+
+            if not user or not verify_password(
+                password,
+                user.password_hash
+            ):
+                raise HTTPException(
+                    status_code=401,
+                    detail="Credenciales incorrectas",
+                    headers={
+                        "WWW-Authenticate":"Bearer"
+                    }
+                )
+
+            if user.deleted_at is not None:
+
+                raise HTTPException(
+                    status_code=400,
+                    detail="Cuenta desactivada"
+                )
+
+            access_token = create_access_token(
+                data={
+                    "sub":str(user.id),
+                    "email":user.email
+                }
             )
 
-        if user.deleted_at is not None:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Cuenta de usuario desactivada",
+            return Token(
+                access_token=access_token,
+                token_type="bearer",
+                expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
             )
 
-        access_token = create_access_token(
-            data={"sub": str(user.id), "email": user.email}
-        )
-        return Token(
-            access_token=access_token,
-            token_type="bearer",
-            expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-        )
+    # ---------------- LISTAR ----------------
 
-    def list_all(self, offset: int = 0, limit: int = 20) -> list[UserPublic]:
-        """Lista todos los usuarios activos."""
-        usuarios = self.uow.usuarios.get_active(offset=offset, limit=limit)
-        return [UserPublic.model_validate(u) for u in usuarios]
+    def list_all(
+        self,
+        offset:int=0,
+        limit:int=20
+    ) -> list[UserPublic]:
 
-    def soft_delete(self, user_id: int) -> None:
-        """Soft delete de usuario (setea deleted_at)."""
-        from datetime import datetime, timezone
-        user = self._get_or_404(user_id)
-        user.deleted_at = datetime.now(timezone.utc)
-        self.uow.usuarios.add(user)
+        with UsuarioUnitofWork(self._session) as uow:
+
+            usuarios = uow.usuarios.get_active(
+                offset=offset,
+                limit=limit
+            )
+
+            return [
+                UserPublic.model_validate(u)
+                for u in usuarios
+            ]
+
+    # ---------------- UPDATE DIRECCIONES ----------------
+
+    def update_direcciones(
+        self,
+        usuario_id:int,
+        data:list[DireccionUpdate]
+    ) -> UserPublic:
+
+        with UsuarioUnitofWork(self._session) as uow:
+
+            usuario = self._get_or_404(
+                uow,
+                usuario_id
+            )
+
+            for direccion_data in data:
+
+                direccion = next(
+                    (
+                        d for d in usuario.direcciones
+                        if d.id == direccion_data.id
+                    ),
+                    None
+                )
+
+                if not direccion:
+
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"Direccion {direccion_data.id} no encontrada"
+                    )
+
+                update_data = direccion_data.model_dump(
+                    exclude_unset=True
+                )
+
+                update_data.pop(
+                    "id",
+                    None
+                )
+
+                for campo, valor in update_data.items():
+
+                    setattr(
+                        direccion,
+                        campo,
+                        valor
+                    )
+
+            uow.commit()
+
+            uow.session.refresh(usuario)
+
+            return UserPublic.model_validate(
+                usuario
+            )
+
+    # ---------------- SOFT DELETE ----------------
+
+    def soft_delete(
+        self,
+        user_id:int
+    ):
+
+        with UsuarioUnitofWork(self._session) as uow:
+
+            usuario = self._get_or_404(
+                uow,
+                user_id
+            )
+
+            usuario.deleted_at = datetime.now(
+                timezone.utc
+            )
+
+            uow.commit()

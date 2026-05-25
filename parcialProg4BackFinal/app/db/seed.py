@@ -64,3 +64,4 @@ def run(session: Session) -> None:
             print(f" [!] Error con {data['email']}: {e}")
 
     print("\nSeed completado.")
+

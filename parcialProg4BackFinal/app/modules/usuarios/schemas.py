@@ -2,6 +2,7 @@ from typing import Optional
 from datetime import datetime
 from sqlmodel import SQLModel, Field
 from pydantic import EmailStr
+from app.modules.Direccion_Entrega.schema import DireccionPublic, DireccionCreate,  DireccionUpdate  
 
 
 class UserCreate(SQLModel):
@@ -11,6 +12,7 @@ class UserCreate(SQLModel):
     email: EmailStr
     celular: Optional[str] = Field(default=None, max_length=20)
     password: str = Field(min_length=8)
+    direcciones: list[DireccionCreate] = Field(default_factory=list)
 
 
 class UserPublic(SQLModel):
@@ -22,7 +24,7 @@ class UserPublic(SQLModel):
     celular: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
-
+    direcciones: list[DireccionPublic] = Field(default_factory=list)    
     model_config = {"from_attributes": True}
 
 

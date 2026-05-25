@@ -16,41 +16,70 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, status, Response
 from fastapi.security import OAuth2PasswordRequestForm
+from sqlmodel import Session
 
-from app.core.unit_of_work import UnitOfWork, get_uow
+from app.core.database import get_session
 from app.core.deps import get_current_active_user
-from app.modules.usuarios.schemas import UserCreate, UserPublic
+
+from app.modules.usuarios.schemas import (
+    UserCreate,
+    UserPublic
+)
+
 from app.modules.usuarios.service import UsuarioService
 
-router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
+
+router = APIRouter(
+    prefix="/api/v1/auth",
+    tags=["auth"]
+)
 
 
-# ── Registro ──────────────────────────────────────────────────────────────────
+# ---------- REGISTER ----------
 
-@router.post("/register", response_model=UserPublic, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register",
+    response_model=UserPublic,
+    status_code=status.HTTP_201_CREATED
+)
 def register(
     user_in: UserCreate,
-    uow: Annotated[UnitOfWork, Depends(get_uow)],
+
+    session: Annotated[
+        Session,
+        Depends(get_session)
+    ]
 ):
-    with uow:
-        service = UsuarioService(uow)
-        return service.register(user_in)
+
+    service = UsuarioService(session)
+
+    return service.register(user_in)
 
 
-# ── Login ─────────────────────────────────────────────────────────────────────
-# OAuth2PasswordRequestForm usa "username" por protocolo,
-# pero nosotros lo tratamos como email internamente.
+# ---------- LOGIN ----------
 
 @router.post("/token")
 def login(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    uow: Annotated[UnitOfWork, Depends(get_uow)],
-    response: Response,
+
+    form_data: Annotated[
+        OAuth2PasswordRequestForm,
+        Depends()
+    ],
+
+    session: Annotated[
+        Session,
+        Depends(get_session)
+    ],
+
+    response: Response
 ):
-    with uow:
-        service = UsuarioService(uow)
-        # form_data.username contiene el email (el campo se llama username por estándar OAuth2)
-        token = service.authenticate(form_data.username, form_data.password)
+
+    service = UsuarioService(session)
+
+    token = service.authenticate(
+        form_data.username,
+        form_data.password
+    )
 
     response.set_cookie(
         key="access_token",
@@ -58,28 +87,47 @@ def login(
         httponly=True,
         max_age=token.expires_in,
         samesite="lax",
-        secure=False,  # True en producción con HTTPS
+        secure=False
     )
-    return {"mensaje": "Login exitoso. Sesión iniciada."}
+
+    return {
+        "mensaje":
+        "Login exitoso"
+    }
 
 
-# ── Logout ────────────────────────────────────────────────────────────────────
+# ---------- LOGOUT ----------
 
 @router.post("/logout")
-def logout(response: Response):
+def logout(
+    response: Response
+):
+
     response.delete_cookie(
         key="access_token",
         httponly=True,
         samesite="lax",
-        secure=False,
+        secure=False
     )
-    return {"mensaje": "Sesión cerrada exitosamente"}
+
+    return {
+        "mensaje":
+        "Sesión cerrada"
+    }
 
 
-# ── /me ───────────────────────────────────────────────────────────────────────
+# ---------- ME ----------
 
-@router.get("/me", response_model=UserPublic)
+@router.get(
+    "/me",
+    response_model=UserPublic
+)
 def read_me(
-    current_user: Annotated[UserPublic, Depends(get_current_active_user)],
+
+    current_user: Annotated[
+        UserPublic,
+        Depends(get_current_active_user)
+    ]
 ):
+
     return current_user

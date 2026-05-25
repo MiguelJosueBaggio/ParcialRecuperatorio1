@@ -6,7 +6,7 @@ from sqlmodel import SQLModel, Field
 
 class DireccionCreate(SQLModel):
 
-    usuario_id: int
+  #  usuario_id: int
 
     alias: Optional[str] = Field(
         default=None,
@@ -58,7 +58,7 @@ class DireccionPublic(SQLModel):
 
     id: int
 
-    usuario_id: int
+    #usuario_id: int
 
     alias: Optional[str]
 
