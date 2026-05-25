@@ -7,12 +7,15 @@ from app.modules.EstadoPedido.seed import seed_estado_pedido
 from app.modules.Ingrediente.router import router as ingredientes_router
 from app.modules.Producto.router import router as productos_router
 from app.modules.Categoria.router import router as categorias_router
+from app.modules.UnidadMedida.router import router as unidades_router
+from app.modules.UnidadMedida.seed import seed_unidad_medida
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_db_and_tables()
     seed_estado_pedido()
+    seed_unidad_medida()
     yield
 
 
@@ -35,7 +38,7 @@ app.add_middleware(
 app.include_router(ingredientes_router, prefix="/ingredientes")
 app.include_router(productos_router, prefix="/productos", tags=["productos"])
 app.include_router(categorias_router, prefix="/categorias", tags=["categorias"])
-
+app.include_router(unidades_router, prefix="/unidades", tags=["unidades"])
 
 
 #python -m fastapi dev app/main.py
