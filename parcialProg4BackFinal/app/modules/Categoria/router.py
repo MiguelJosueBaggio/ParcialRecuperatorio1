@@ -41,6 +41,22 @@ def list_categorias(
 ) -> CategoriaService:
     return svc.get_all(offset=offset, limit=limit)
 
+
+@router.get(
+    "/subcategoria{categoria_id}",
+    response_model=CategoriaPublic,
+    summary="Obtener subcat por ID",
+)
+def get_categoria(
+    categoria_id: int,
+    svc: CategoriaService = Depends(get_categoria_service),
+) -> CategoriaPublic:
+    return svc.get_subcategoria_by_id(categoria_id)
+
+
+
+
+
 ##OBTENER categoria POR ID
 @router.get(
     "/{categoria_id}",
@@ -54,17 +70,6 @@ def get_categoria(
     return svc.get_by_id(categoria_id)
 
 ##get subcatgoriaby_id
-
-@router.get(
-    "/subcategoria{categoria_id}",
-    response_model=CategoriaPublic,
-    summary="Obtener subcat por ID",
-)
-def get_categoria(
-    categoria_id: int,
-    svc: CategoriaService = Depends(get_categoria_service),
-) -> CategoriaPublic:
-    return svc.get_by_id(categoria_id)
 
 
 

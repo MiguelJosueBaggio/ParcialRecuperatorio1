@@ -98,12 +98,15 @@ class PedidoService:
 
         return uow.detalle_pedidos.obtener_nombre_producto(producto_id )         
     
-    def obtener_cantidad_detalles_pedido(self, pedido_id):  ##fucion para obtener el nombre de la bases de dtaos de producto
+   # def obtener_cantidad_detalles_pedido(self, pedido_id):  ##fucion para obtener el nombre de la bases de dtaos de producto
 
-      with DetallePedidoUnitofWork(self._session) as uow:
+    #  with DetallePedidoUnitofWork(self._session) as uow:
 
-        return uow.detalle_pedidos.get_cantidad_detalles_pedido(pedido_id ) 
-    
+       # return uow.detalle_pedidos.get_cantidad_detalles_pedido(pedido_id ) 
+    def _obtener_valor_cantidad_detalles_pedido(self, detalle_id: int):  ##fucion para obtener el nombre de la bases de dtaos de producto
+        with DetallePedidoUnitofWork(self._session) as uow:
+            return uow.detalle_pedidos.obtener_cantidad(detalle_id)
+
     def _restar_stock(self,uow:DetallePedidoUnitofWork,producto_id,cantidad) ->int:
         stock= uow.detalle_pedidos.obtener_stock_producto(producto_id)
         if stock is None:
@@ -206,19 +209,17 @@ class PedidoService:
         # 🔹 Campos simples (excluyendo relaciones)
         patch = {k: v for k, v in data.model_dump(exclude_unset=True).items() if v not in (None, "")} ##TRANFORMO A DICCIONARO filtra los campos que no se han enviado en el update o que son nulos o vacios
 
-        if patch.get("estado_codigo")=="ENTREGADO" and pedido.estado_codigo != "ENTREGADO": #EVALUO SI EL ESTADO ES ENTREGADO EN EL UPDATE Y ADMAS QUE EN LA BASE DE DATOS SEA DIFERENTE A ENTREGADA PARA EVITAR DESCUENTOS POR DUPLICADO
-            for detalle in pedido.detalles: ##BUSSCO EN TODOS LOS DETALLES
-                nuevo_stock = self._restar_stock (uow,detalle.producto_id,detalle.cantidad) #APLICO LA FORMULA DE DESCONTAR PEDIDO
-                producto = uow.productos.get_by_id(detalle.producto_id)
-                producto.stock_cantidad = nuevo_stock
-                uow.commit() ##GUARDO LOS CAMBIOS EN LA BASE DE DATOS
-
+        if patch.get("estado_codigo") == "ENTREGADO" and pedido.estado_codigo != "ENTREGADO":
+         for detalle in pedido.detalles:
+              producto = uow.productos.get_by_id(detalle.producto_id)
+              if producto is None:
+                  raise HTTPException(status_code=404, detail=f"Producto {detalle.producto_id} no encontrado")
+              producto.stock_cantidad = self._restar_stock(uow, detalle.producto_id, detalle.cantidad)
+        
         for field, value in patch.items():
             setattr(pedido, field, value)
-        
-        
-
         uow.pedidos.add(pedido)
+        uow.commit()
       
             
 

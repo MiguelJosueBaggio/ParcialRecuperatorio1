@@ -41,4 +41,9 @@ class DetallePedidoRepository(BaseRepository[DetallePedido]):
             return producto.stock_cantidad
         else:
             raise ValueError(f"Producto con id {producto_id} no encontrado")
-         
+    def obtener_cantidad(self, detalle_pedido_id: int) -> int:
+        statement = select(DetallePedido).where(DetallePedido.id == detalle_pedido_id)
+        detalle = self.session.exec(statement).first()
+        if detalle:
+           return detalle.cantidad
+        raise ValueError(f"DetallePedido con id {detalle_pedido_id} no encontrado")
