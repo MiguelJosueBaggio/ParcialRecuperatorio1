@@ -18,7 +18,7 @@ class Settings(BaseSettings):
         )
 
     # JWT
-    SECRET_KEY: str = "cambia-esto-en-produccion-por-un-secreto-largo"
+    SECRET_KEY: str = "cambiar-esto-en-produccion-por-un-secreto-largo"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
