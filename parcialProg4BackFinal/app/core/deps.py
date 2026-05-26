@@ -119,7 +119,7 @@ async def get_current_user(
         return UserPublic.model_validate(user)
 
 
-async def get_current_active_user(
+'''async def get_current_active_user(
     current_user: Annotated[UserPublic, Depends(get_current_user)],
 ) :
     """
@@ -136,7 +136,13 @@ async def get_current_active_user(
             detail="Cuenta de usuario desactivada",
         )
 
-    return UserPublic.model_validate(current_user) # Usuario válido y activo
+    return UserPublic.model_validate(current_user) # Usuario válido y activo'''
+
+async def get_current_active_user(
+    current_user: Annotated[UserPublic, Depends(get_current_user)],
+) -> UserPublic:
+    return current_user
+
 
 
 def require_role(allowed_roles: list[str]):
