@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends,Query,status
 from sqlmodel import Session
 from app.core.database import get_session
 from app.modules.Ingrediente.service import IngredienteService
-from app.modules.Ingrediente.schemas import IngredienteCreate,IngredienteUpsate,IngredientePublic,IngredienteList
+from app.modules.Ingrediente.schemas import IngredienteCreate,IngredienteUpsate,IngredientePublic,IngredienteList,ProductoIngredienteCreate,ProductoIngredienteUpdate,ProductoIngredientePublic   
    
 
 router = APIRouter()
@@ -27,6 +27,20 @@ def create_ingrediente(
 ) -> IngredientePublic:
     """Router delega al servicio — sin lógica de negocio aquí."""
     return svc.create(data)
+
+
+@router.post(
+    "/producto-ingrediente",
+    response_model=ProductoIngredientePublic,
+    status_code=status.HTTP_201_CREATED,
+    summary="asociar ingrediente a producto",
+)
+def create_producto_ingrediente(
+    data: ProductoIngredienteCreate,
+    svc: IngredienteService = Depends(get_ingrediente_service),
+) -> ProductoIngredientePublic:
+    """Router delega al servicio — sin lógica de negocio aquí."""
+    return svc.create_producto_ingrediente(data)    
 
 #OBTENER INGREDIENETES
 @router.get(

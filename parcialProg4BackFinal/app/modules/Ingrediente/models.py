@@ -25,11 +25,11 @@ class productoIngredienteLink(SQLModel, table=True):
         )
     )
     cantidad:Decimal=Field(default=0.0,ge=0)
-    unidad_medida_id: Optional[int] = Field(default=None, foreign_key="Unidad_medida.id")
+    unidad_medida_id: Optional[int] = Field(default=None, foreign_key="unidad_medida.id")
     es_removible:bool = Field(default=True)
     
 
-
+    unidad_medida: Optional["UnidadMedida"] = Relationship(back_populates="ingredientes")
 
 
 

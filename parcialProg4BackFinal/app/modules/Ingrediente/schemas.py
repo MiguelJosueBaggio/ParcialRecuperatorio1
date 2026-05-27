@@ -1,6 +1,7 @@
 from typing import Optional, List
 
 from sqlmodel import SQLModel,Field
+from decimal import Decimal
 
 from enum import Enum
 
@@ -46,3 +47,30 @@ class IngredientePublic(SQLModel):
 class IngredienteList(SQLModel):
     data:List[IngredientePublic]
     total:int
+
+
+
+class ProductoIngredienteCreate(SQLModel):
+    producto_id: int
+    ingrediente_id: int
+    cantidad: Decimal = Field(default=0.0, ge=0)
+    unidad_medida_id: Optional[int] = None
+    es_removible: bool = Field(default=True)
+
+class ProductoIngredienteUpdate(SQLModel):
+    cantidad: Optional[Decimal] = Field(default=None, ge=0)
+    unidad_medida_id: Optional[int] = None
+    es_removible: Optional[bool] = None
+
+class ProductoIngredientePublic(SQLModel):
+    producto_id: int
+    ingrediente_id: int
+    cantidad: Decimal
+    unidad_medida_id: Optional[int]
+    es_removible: bool  
+
+class ProductoIngredienteList(SQLModel):
+    data: List[ProductoIngredientePublic]
+    total: int    
+
+
