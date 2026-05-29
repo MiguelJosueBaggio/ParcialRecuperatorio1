@@ -234,13 +234,27 @@ class PedidoService:
         # 🔹 Campos simples (excluyendo relaciones)
         patch = {k: v for k, v in data.model_dump(exclude_unset=True).items() if v not in (None, "")} ##TRANFORMO A DICCIONARO filtra los campos que no se han enviado en el update o que son nulos o vacios
 
-        if patch.get("estado_codigo") == "ENTREGADO" and pedido.estado_codigo != "ENTREGADO":
+        nuevo_estado = patch.get("estado_codigo")
+        if nuevo_estado == "ENTREGADO" and pedido.estado_codigo != "ENTREGADO":
          for detalle in pedido.detalles:
               producto = uow.productos.get_by_id(detalle.producto_id)
               if producto is None:
                   raise HTTPException(status_code=404, detail=f"Producto {detalle.producto_id} no encontrado")
               producto.stock_cantidad = self._restar_stock(uow, detalle.producto_id, detalle.cantidad)
         
+          # HISTORIAL
+        historial = HistorialEstadoPedido(
+                pedido_id=pedido.id,
+                estado_desde=pedido.estado_codigo,
+                estado_hacia=nuevo_estado,
+                usuario_id=data.usuario_id,   # o current_user.id
+                motivo=data.notas if data.notas else f"Cambio de estado a {nuevo_estado}"
+            )
+
+        uow.historial_estado_pedido.add(historial)
+
+
+
         for field, value in patch.items():
             setattr(pedido, field, value)
         uow.pedidos.add(pedido)
