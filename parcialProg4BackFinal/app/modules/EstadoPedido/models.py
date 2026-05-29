@@ -3,6 +3,7 @@ from sqlmodel import SQLModel, Field, Relationship
 
 if TYPE_CHECKING:
     from app.modules.Pedido.models import Pedido
+    from app.modules.HistorialPedido.models import HistorialEstadoPedido
 
 
 class EstadoPedidoModel(SQLModel, table=True):
@@ -26,3 +27,21 @@ class EstadoPedidoModel(SQLModel, table=True):
     pedidos: List["Pedido"] = Relationship(
         back_populates="estado_pedido"
     )
+
+    historial_desde: List["HistorialEstadoPedido"] = Relationship(
+    back_populates="estado_desde_rel",
+    sa_relationship_kwargs={
+        "foreign_keys": "HistorialEstadoPedido.estado_desde"
+    }
+)
+
+    historial_hacia: List["HistorialEstadoPedido"] = Relationship(
+    back_populates="estado_hacia_rel",
+    sa_relationship_kwargs={
+        "foreign_keys": "HistorialEstadoPedido.estado_hacia"
+    }
+)   
+    
+
+    # IMPORT FINAL
+from app.modules.HistorialPedido.models import HistorialEstadoPedido

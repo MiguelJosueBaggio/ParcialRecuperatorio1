@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from app.modules.usuarios.model import Usuario
     from app.modules.FormaPago.models import FormaPago
     from app.modules.Direccion_Entrega.models import Direccion  
+    from app.modules.HistorialPedido.models import HistorialEstadoPedido
 class Pedido(SQLModel, table=True):
     __tablename__ = "pedido"
 
@@ -67,3 +68,6 @@ class Pedido(SQLModel, table=True):
     usuario: Optional["Usuario"] = Relationship(back_populates="pedidos")
 
     direccion: Optional["Direccion"] = Relationship(back_populates="pedidos")
+
+    historial_estados: List["HistorialEstadoPedido"] = Relationship(back_populates="pedido")
+    

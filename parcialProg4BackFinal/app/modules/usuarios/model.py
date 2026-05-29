@@ -10,6 +10,7 @@ if TYPE_CHECKING:
     from app.modules.Rol.models import Rol
     from Direccion_Entrega.models import Direccion
     from app.modules.Pedido.models import Pedido
+    from app.modules.HistorialPedido.models import HistorialEstadoPedido
 class Usuario(SQLModel, table=True):
     __tablename__ = "usuario"
 
@@ -27,6 +28,8 @@ class Usuario(SQLModel, table=True):
 )
 
     pedidos: List["Pedido"] = Relationship(back_populates="usuario")
+
+    historial_estados_pedido: List["HistorialEstadoPedido"] = Relationship(back_populates="usuario")
 
     # Soft delete
     deleted_at: Optional[datetime] = Field(

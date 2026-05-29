@@ -3,12 +3,14 @@ from sqlmodel import Session
 from decimal import Decimal
 from app.modules.Pedido.models import Pedido
 from app.modules.DetallePedido.models import DetallePedido
+from app.modules.HistorialPedido.models import HistorialEstadoPedido
 
 from app.modules.Pedido.schemas import PedidoCreate, PedidoPublic, PedidoUpdate, PedidoList, DetallePedidoCreate, DetallePedidoPublic
 from app.modules.Pedido.unit_of_work import PedidoUnitofWork
 from app.modules.DetallePedido.unit_of_work import DetallePedidoUnitofWork
 from app.modules.EstadoPedido.unit_of_work import EstadoPedidoUnitofWork
 from app.modules.Producto.unit_of_work import ProductoUnitofWork
+from app.modules.HistorialPedido.unit_of_work import HistorialEstadoPedidoUnitofWork
 class PedidoService:
 
     ##Inicia servecie
@@ -192,7 +194,30 @@ class PedidoService:
                 uow.pedidos.add(pedido)
 
             
-                result = PedidoPublic.model_validate(pedido)
+
+                # obtener id generado
+        self._session.flush()
+
+        # ---------- HISTORIAL INICIAL ----------
+        historial = HistorialEstadoPedido(
+            pedido_id=pedido.id,
+            estado_desde=None,
+            estado_hacia=pedido.estado_codigo,
+            usuario_id=pedido.usuario_id,
+            motivo="Pedido creado"
+        )
+
+        self._session.add(historial)
+        # ---------------------------------------
+
+        uow.commit()
+
+
+
+
+
+
+        result = PedidoPublic.model_validate(pedido)
 
         return result
     
