@@ -28,7 +28,7 @@ class Pedido(SQLModel, table=True):
 
     estado_codigo: str = Field(
         foreign_key="estado_pedido.codigo",
-        max_length=20
+        max_length=20,default="PENDIENTE"
     )
 
     forma_pago_codigo: str = Field(

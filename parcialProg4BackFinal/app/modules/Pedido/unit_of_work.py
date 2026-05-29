@@ -5,6 +5,8 @@ from app.modules.DetallePedido.repository import DetallePedidoRepository
 from app.modules.Producto.repository import ProductoRepository
 from app.modules.Pedido.repository import PedidoRepository
 from app.modules.HistorialPedido.repository import HistorialEstadoPedidoRepository
+from app.modules.EstadoPedido.repository import EstadoPedidoRepository
+
 class PedidoUnitofWork(UnitOfWork):
     def __init__ (self, session:Session)-> None:
         super().__init__(session)
@@ -13,3 +15,4 @@ class PedidoUnitofWork(UnitOfWork):
         self.detalle_pedidos = DetallePedidoRepository(session)
         self.ingredientes = IngredienteRepository(session)
         self.historial_estado_pedido = HistorialEstadoPedidoRepository(session)
+        self.estado_pedido = EstadoPedidoRepository(session)

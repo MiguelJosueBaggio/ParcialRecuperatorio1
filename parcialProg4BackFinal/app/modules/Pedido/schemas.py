@@ -37,7 +37,7 @@ class DetallePedidoList(SQLModel):
 class PedidoCreate(SQLModel):
     usuario_id: Optional[int] = None
     direccion_id: Optional[int] = None
-    estado_codigo:str = Field( max_length=20)
+    #estado_codigo:str = Field( max_length=20)
     forma_pago_codigo:str = Field(max_length=20)    
     notas: Optional[str] = Field(default=None, max_length=500)      
    

@@ -173,7 +173,7 @@ class PedidoService:
                         nuevo_stock = self._restar_stock(uow,detalle_pedido.producto_id,detalle_pedido.cantidad)##restar stock
                         producto = uow.productos.get_by_id(detalle_pedido.producto_id) ##obtener producto
                         producto.stock_cantidad = nuevo_stock
-                        uow.commit() ##guardo el cambio en la base de datos
+                        uow.detalle_pedidos.add(detalle_baseDatos) ##guardo el cambio en la base de datos SACAR
                     detalle_baseDatos.personalizacion=[] # dentor de cada detalle pedido puedo elegir ingredientes a perosnalizar AGREGAR ARRIBA DE SNAPpRECIO
                     for personalizado in detalle_pedido.personalizacion: ##recooro la lista del detalle create que cargo el usuario 
                         removible= self.get_ingrediente_perosnalizables(uow,personalizado) ##uso la fucion para obtener el ingrediente reciebe como para parametro el entero que cargo el usuariioo
@@ -206,11 +206,13 @@ class PedidoService:
             usuario_id=pedido.usuario_id,
             motivo="Pedido creado"
         )
+        uow.historial_estado_pedido.add(historial)
 
-        self._session.add(historial)
+
+       # self._session.add(historial)
         # ---------------------------------------
 
-        uow.commit()
+       # uow.commit()
 
 
 
@@ -224,45 +226,73 @@ class PedidoService:
 
     ###Modificador####falta cooregir
     
-    def update(self, pedido_id: int, data: PedidoUpdate) -> PedidoPublic:
-      with PedidoUnitofWork(self._session) as uow:
-        pedido = self._get_or_404(uow, pedido_id) ##BUSCO EL PEDIDO
-        
-       
-       
+    def update(self, pedido_id:int, data:PedidoUpdate)->PedidoPublic:
 
-        # 🔹 Campos simples (excluyendo relaciones)
-        patch = {k: v for k, v in data.model_dump(exclude_unset=True).items() if v not in (None, "")} ##TRANFORMO A DICCIONARO filtra los campos que no se han enviado en el update o que son nulos o vacios
+     with PedidoUnitofWork(self._session) as uow:
 
-        nuevo_estado = patch.get("estado_codigo")
-        if nuevo_estado == "ENTREGADO" and pedido.estado_codigo != "ENTREGADO":
-         for detalle in pedido.detalles:
-              producto = uow.productos.get_by_id(detalle.producto_id)
-              if producto is None:
-                  raise HTTPException(status_code=404, detail=f"Producto {detalle.producto_id} no encontrado")
-              producto.stock_cantidad = self._restar_stock(uow, detalle.producto_id, detalle.cantidad)
+        pedido = self._get_or_404(uow,pedido_id) ##obtenemos el pedido a modificar sino existe error 404
+
+        patch = { # diccionario con los campos a modificar
+            k:v
+            for k,v in data.model_dump(exclude_unset=True).items()  #solo incluye los campos que el usuario envio en la peticion, si el usuario no envio un campo ese campo no se incluye en el diccionario
+            if v not in (None,"")
+        }
+
+        nuevo_estado = patch.get("estado_codigo") ##obtenemos el nuevo estado del diccionario de campos a modificar, si el usuario no envio el campo estado_codigo entonces nuevo_estado sera None
+
+        estado_nuevo = uow.estado_pedido.get_by_codigo(nuevo_estado) ##obtenemos el nuevo estado de la base de datos, si nuevo_estado es None entonces estado_nuevo sera None
         
-          # HISTORIAL
-        historial = HistorialEstadoPedido(
-                pedido_id=pedido.id,
-                estado_desde=pedido.estado_codigo,
-                estado_hacia=nuevo_estado,
-                usuario_id=data.usuario_id,   # o current_user.id
-                motivo=data.notas if data.notas else f"Cambio de estado a {nuevo_estado}"
+        if estado_nuevo is None:
+            raise HTTPException(
+        404,
+        "Estado no encontrado")
+
+        estado_actual = uow.estado_pedido.get_by_codigo( #obtenemos el estado actual del pedido de la base de datos, si el pedido no tiene estado entonces estado_actual sera None
+            pedido.estado_codigo)
+
+        if estado_nuevo.orden - estado_actual.orden != 1: ##verificamos que el cambio de estado sea valido, es decir que el nuevo estado sea el siguiente al estado actual, si el cambio de estado no es valido entonces se retorna un error 400
+            raise HTTPException(
+                400,
+                "Cambio de estado no permitido"
             )
+
+        if nuevo_estado == "ENTREGADO" and pedido.estado_codigo != "ENTREGADO": ##si el nuevo estado es entregado y el estado actual no es entregado entonces se descuenta el stock de los productos del pedido
+
+            for detalle in pedido.detalles:
+
+                producto = uow.productos.get_by_id(detalle.producto_id)
+
+                if producto is None:
+                    raise HTTPException(status_code=404, detail=f"Producto {detalle.producto_id} no encontrado")
+
+                producto.stock_cantidad = self._restar_stock(
+                    uow,
+                    detalle.producto_id,
+                    detalle.cantidad
+                )
+
+                uow.productos.add(producto)
+
+       
+
+        historial = HistorialEstadoPedido(
+            pedido_id=pedido.id,
+            estado_desde=pedido.estado_codigo,
+            estado_hacia=nuevo_estado,
+            usuario_id=data.usuario_id,
+            motivo=data.notas or f"Cambio a {nuevo_estado}"
+        )
 
         uow.historial_estado_pedido.add(historial)
 
+        for field,value in patch.items():
+            setattr(pedido,field,value)
 
-
-        for field, value in patch.items():
-            setattr(pedido, field, value)
         uow.pedidos.add(pedido)
-        uow.commit()
-      
-            
 
-      return PedidoPublic.model_validate(pedido)
+     return PedidoPublic.model_validate(pedido)
+    
+
 
 
     ##eliminar
