@@ -11,6 +11,7 @@ from app.modules.DetallePedido.unit_of_work import DetallePedidoUnitofWork
 from app.modules.EstadoPedido.unit_of_work import EstadoPedidoUnitofWork
 from app.modules.Producto.unit_of_work import ProductoUnitofWork
 from app.modules.HistorialPedido.unit_of_work import HistorialEstadoPedidoUnitofWork
+from app.modules.HistorialPedido.schemas import HistorialEstadoPedidoPublic, HistorialEstadoPedidoList
 class PedidoService:
 
     ##Inicia servecie
@@ -302,3 +303,22 @@ class PedidoService:
             pedido= self._get_or_404(uow, pedido_id)
             pedido.is_active = False
             uow.pedidos.add(pedido)
+
+
+    def get_all_historial_estado_pedido(self, offset: int, limit: int) -> HistorialEstadoPedidoList:
+        with HistorialEstadoPedidoUnitofWork(self._session) as uow:
+            historial = uow.historial_estado_pedido.get_all(offset, limit )
+
+        total = uow.historial_estado_pedido.count_sin_filtro() 
+        
+     
+
+        result = HistorialEstadoPedidoList(
+            data=[
+                HistorialEstadoPedidoPublic.model_validate(i)
+                for i in historial              
+            ],
+            total=total,
+        )
+
+        return result
