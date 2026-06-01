@@ -46,7 +46,7 @@ class ProductoService:
 
         return result
         ##obtener ingrediente del produto segun su id
-    def get_ingrediente_or_404(self,uow:ProductoUnitofWork, ingrediente_id:int):
+    def _get_ingrediente_or_404(self,uow:ProductoUnitofWork, ingrediente_id:int):
         
         ingrediente = uow.ingredientes.get_by_id(ingrediente_id)
         if not ingrediente:
@@ -56,7 +56,7 @@ class ProductoService:
             )
         return ingrediente
     
-    def get_categoria_or_404(self,uow:ProductoUnitofWork, categoria_id:int):
+    def _get_categoria_or_404(self,uow:ProductoUnitofWork, categoria_id:int):
         
         categoria = uow.categorias.get_by_id(categoria_id)
         if not categoria:
@@ -85,11 +85,11 @@ class ProductoService:
        
         with ProductoUnitofWork(self._session) as uow:
            
-            self.get_categoria_or_404(uow, data.categoria_id)
+            self._get_categoria_or_404(uow, data.categoria_id)
 
             producto = Producto.model_validate(data)
             for ingrediente_id in data.ingrediente_ids: ##recoerre los ingredientes agregados
-                 ingrediente= self.get_ingrediente_or_404(uow,ingrediente_id)##si esta presemnete el ingrediente se guarga en ingrediente
+                 ingrediente= self._get_ingrediente_or_404(uow,ingrediente_id)##si esta presemnete el ingrediente se guarga en ingrediente
                  producto.ingredientes.append(ingrediente) ##guardamos el ingredeinte en ela lista que ira  a la base de datos
 
            
