@@ -3,12 +3,15 @@ from sqlmodel import Session
 from decimal import Decimal
 from app.modules.Pedido.models import Pedido
 from app.modules.DetallePedido.models import DetallePedido
+from app.modules.HistorialPedido.models import HistorialEstadoPedido
 
 from app.modules.Pedido.schemas import PedidoCreate, PedidoPublic, PedidoUpdate, PedidoList, DetallePedidoCreate, DetallePedidoPublic
 from app.modules.Pedido.unit_of_work import PedidoUnitofWork
 from app.modules.DetallePedido.unit_of_work import DetallePedidoUnitofWork
 from app.modules.EstadoPedido.unit_of_work import EstadoPedidoUnitofWork
 from app.modules.Producto.unit_of_work import ProductoUnitofWork
+from app.modules.HistorialPedido.unit_of_work import HistorialEstadoPedidoUnitofWork
+from app.modules.HistorialPedido.schemas import HistorialEstadoPedidoPublic, HistorialEstadoPedidoList
 class PedidoService:
 
     ##Inicia servecie
@@ -98,7 +101,15 @@ class PedidoService:
 
         return uow.detalle_pedidos.obtener_nombre_producto(producto_id )         
     
-    
+   # def obtener_cantidad_detalles_pedido(self, pedido_id):  ##fucion para obtener el nombre de la bases de dtaos de producto
+
+    #  with DetallePedidoUnitofWork(self._session) as uow:
+
+       # return uow.detalle_pedidos.get_cantidad_detalles_pedido(pedido_id ) 
+    def _obtener_valor_cantidad_detalles_pedido(self, detalle_id: int):  ##fucion para obtener el nombre de la bases de dtaos de producto
+        with DetallePedidoUnitofWork(self._session) as uow:
+            return uow.detalle_pedidos.obtener_cantidad(detalle_id)
+
     def _restar_stock(self,uow:DetallePedidoUnitofWork,producto_id,cantidad) ->int:
         stock= uow.detalle_pedidos.obtener_stock_producto(producto_id)
         if stock is None:
@@ -159,11 +170,11 @@ class PedidoService:
                     detalle_baseDatos.subtotal_snap=(precio*detalle_baseDatos.cantidad) 
                     total_pedido = Decimal(str(pedido.total)) + detalle_baseDatos.subtotal_snap ##calculo el total del pedido sumando el subtotal de cada detalle pedido
                     ##Calcuñlo el subtotal y se guarda en bases de datos
-                   ## if pedido.estado_pedido == "ENTREGADO":
-                                                        ##    producto=uow.productos.get_by_id(detalle_baseDatos.producto_id)
-
-                                                          ##  producto.stock_cantidad = self._restar_stock(uow,detalle_baseDatos.producto_id,detalle_baseDatos.cantidad)##restar stock
-                   
+                    if data.estado_codigo=="ENTREGADO" : ##si el estado del pedido es entregado se descuenta el stock
+                        nuevo_stock = self._restar_stock(uow,detalle_pedido.producto_id,detalle_pedido.cantidad)##restar stock
+                        producto = uow.productos.get_by_id(detalle_pedido.producto_id) ##obtener producto
+                        producto.stock_cantidad = nuevo_stock
+                        uow.detalle_pedidos.add(detalle_baseDatos) ##guardo el cambio en la base de datos SACAR
                     detalle_baseDatos.personalizacion=[] # dentor de cada detalle pedido puedo elegir ingredientes a perosnalizar AGREGAR ARRIBA DE SNAPpRECIO
                     for personalizado in detalle_pedido.personalizacion: ##recooro la lista del detalle create que cargo el usuario 
                         removible= self.get_ingrediente_perosnalizables(uow,personalizado) ##uso la fucion para obtener el ingrediente reciebe como para parametro el entero que cargo el usuariioo
@@ -184,44 +195,145 @@ class PedidoService:
                 uow.pedidos.add(pedido)
 
             
-                result = PedidoPublic.model_validate(pedido)
+
+                # obtener id generado
+        self._session.flush()
+
+        # ---------- HISTORIAL INICIAL ----------
+        historial = HistorialEstadoPedido(
+            pedido_id=pedido.id,
+            estado_desde=None,
+            estado_hacia=pedido.estado_codigo,
+            usuario_id=pedido.usuario_id,
+            motivo="Pedido creado"
+        )
+        uow.historial_estado_pedido.add(historial)
+
+
+       # self._session.add(historial)
+        # ---------------------------------------
+
+       # uow.commit()
+
+
+
+
+
+
+        result = PedidoPublic.model_validate(pedido)
 
         return result
     
 
     ###Modificador####falta cooregir
     
-    def update(self, pedido_id: int, data: PedidoUpdate) -> PedidoPublic:
-      with PedidoUnitofWork(self._session) as uow:
-        pedido = self._get_or_404(uow, pedido_id) ##BUSCO EL PEDIDO
+    def update(self, pedido_id:int, data:PedidoUpdate)->PedidoPublic:
+
+     with PedidoUnitofWork(self._session) as uow:
+
+        pedido = self._get_or_404(uow,pedido_id) ##obtenemos el pedido a modificar sino existe error 404
+
+        patch = { # diccionario con los campos a modificar
+            k:v
+            for k,v in data.model_dump(exclude_unset=True).items()  #solo incluye los campos que el usuario envio en la peticion, si el usuario no envio un campo ese campo no se incluye en el diccionario
+            if v not in (None,"")
+        }
+
+        nuevo_estado = patch.get("estado_codigo") ##obtenemos el nuevo estado del diccionario de campos a modificar, si el usuario no envio el campo estado_codigo entonces nuevo_estado sera None
+
+        estado_nuevo = uow.estado_pedido.get_by_codigo(nuevo_estado) ##obtenemos el nuevo estado de la base de datos, si nuevo_estado es None entonces estado_nuevo sera None
         
+        if estado_nuevo is None:
+            raise HTTPException(
+        404,
+        "Estado no encontrado")
+
+        estado_actual = uow.estado_pedido.get_by_codigo( #obtenemos el estado actual del pedido de la base de datos, si el pedido no tiene estado entonces estado_actual sera None
+            pedido.estado_codigo)
+
+        if estado_nuevo.orden - estado_actual.orden != 1: ##verificamos que el cambio de estado sea valido, es decir que el nuevo estado sea el siguiente al estado actual, si el cambio de estado no es valido entonces se retorna un error 400
+            raise HTTPException(
+                400,
+                "Cambio de estado no permitido"
+            )
+
+        if nuevo_estado == "ENTREGADO" and pedido.estado_codigo != "ENTREGADO": ##si el nuevo estado es entregado y el estado actual no es entregado entonces se descuenta el stock de los productos del pedido
+
+            for detalle in pedido.detalles:
+
+                producto = uow.productos.get_by_id(detalle.producto_id)
+
+                if producto is None:
+                    raise HTTPException(status_code=404, detail=f"Producto {detalle.producto_id} no encontrado")
+
+                producto.stock_cantidad = self._restar_stock(
+                    uow,
+                    detalle.producto_id,
+                    detalle.cantidad
+                )
+
+                uow.productos.add(producto)
+
        
-       
 
-        # 🔹 Campos simples (excluyendo relaciones)
-        patch = data.model_dump() ##TRANFORMO A DICCIONARO
+        historial = HistorialEstadoPedido(
+            pedido_id=pedido.id,
+            estado_desde=pedido.estado_codigo,
+            estado_hacia=nuevo_estado,
+            usuario_id=data.usuario_id,
+            motivo=data.notas or f"Cambio a {nuevo_estado}"
+        )
 
-        if patch.get("estado_codigo")=="ENTREGADO" and pedido.estado_codigo != "ENTREGADO": #EVALUO SI EL ESTADO ES ENTREGADO EN EL UPDATE Y ADMAS QUE EN LA BASE DE DATOS SEA DIFERENTE A ENTREGADA PARA EVITAR DESCUENTOS POR DUPLICADO
-            for detalle in pedido.detalles: ##BUSSCO EN TODOS LOS DETALLES
-                detalle.producto.stock_cantidad = self._restar_stock (uow,detalle.producto_id,detalle.cantidad) #APLICO LA FORMULA DE DESCONTAR PEDIDO
-            
+        uow.historial_estado_pedido.add(historial)
 
-        for field, value in patch.items():
-            setattr(pedido, field, value)
-        
-      
+        for field,value in patch.items():
+            setattr(pedido,field,value)
 
         uow.pedidos.add(pedido)
-      
-            
 
-      return PedidoPublic.model_validate(pedido)
+     return PedidoPublic.model_validate(pedido)
+    
+
 
 
     ##eliminar
     def soft_delete(self, pedido_id: int) -> None:
         
         with PedidoUnitofWork(self._session) as uow:
-            pedido= self.get_or_404(uow, pedido_id)
+            pedido= self._get_or_404(uow, pedido_id)
             pedido.is_active = False
             uow.pedidos.add(pedido)
+
+     #HISTORIAL ESTADOS
+    def get_all_historial_estado_pedido(self, offset: int, limit: int) -> HistorialEstadoPedidoList:
+        with HistorialEstadoPedidoUnitofWork(self._session) as uow:
+            historial = uow.historial_estado_pedido.get_all(offset, limit )
+
+        total = uow.historial_estado_pedido.count_sin_filtro() 
+        
+     
+
+        result = HistorialEstadoPedidoList(
+            data=[
+                HistorialEstadoPedidoPublic.model_validate(i)
+                for i in historial              
+            ],
+            total=total,
+        )
+
+        return result
+    
+
+
+    #FORMADEPAGO
+
+    def get_all_forma_pago(self, offset: int, limit: int):
+        with PedidoUnitofWork(self._session) as uow:
+            formas_pago = uow.forma_pago.get_habilitados(offset, limit)
+        total = uow.forma_pago.count_habilitados()
+        result = {
+            "data": [forma_pago for forma_pago in formas_pago],     
+            "total": total
+        }
+
+        return result

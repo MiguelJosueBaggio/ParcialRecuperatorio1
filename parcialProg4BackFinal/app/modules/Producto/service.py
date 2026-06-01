@@ -145,6 +145,6 @@ class ProductoService:
     def soft_delete(self, producto_id: int) -> None:
         
         with ProductoUnitofWork(self._session) as uow:
-            producto= self.get_or_404(uow, producto_id)
+            producto= self._get_or_404(uow, producto_id)
             producto.is_active = False
             uow.productos.add(producto)

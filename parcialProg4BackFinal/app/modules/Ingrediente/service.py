@@ -1,8 +1,8 @@
 from fastapi import HTTPException, status
 from sqlmodel import Session
 
-from app.modules.Ingrediente.models import Ingrediente
-from app.modules.Ingrediente.schemas import IngredienteCreate,IngredienteUpsate,IngredientePublic,IngredienteList
+from app.modules.Ingrediente.models import Ingrediente, productoIngredienteLink
+from app.modules.Ingrediente.schemas import IngredienteCreate,IngredienteUpsate,IngredientePublic,IngredienteList,ProductoIngredienteCreate,ProductoIngredienteUpdate,ProductoIngredientePublic   
 from app.modules.Ingrediente.unit_of_work import IngredienteUnitofWork
 
 class IngredienteService:
@@ -128,3 +128,26 @@ class IngredienteService:
             ingrediente= self.get_or_404(uow, ingrediente_id)
             ingrediente.is_active = False
             uow.ingredientes.add(ingrediente)
+
+
+    ####logica para manejar productosingredientes
+
+    def create_producto_ingrediente(self, data: ProductoIngredienteCreate) -> ProductoIngredientePublic:
+
+     with IngredienteUnitofWork(self._session) as uow:
+
+        existing = uow.producto_ingredientes.get_by_ids(
+            data.ingrediente_id,
+            data.producto_id
+        )
+        if existing:    
+                     datos= data.model_dump(exclude_unset=True, exclude={"ingrediente_id","producto_id"})
+                     for field, value in datos.items():
+                          setattr(existing, field, value)     
+                     uow.producto_ingredientes.add(existing)
+
+        
+
+        return ProductoIngredientePublic.model_validate(existing)
+
+       

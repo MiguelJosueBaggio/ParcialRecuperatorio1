@@ -1,11 +1,11 @@
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, List
 from datetime import datetime
 from decimal import Decimal
 from sqlmodel import SQLModel, Field, Relationship
 
 if TYPE_CHECKING:
     from app.modules.usuarios.model import Usuario
-
+    from app.modules.Pedido.models import Pedido
 
 class Direccion(SQLModel, table=True):
     __tablename__ = "direccion"
@@ -85,3 +85,5 @@ class Direccion(SQLModel, table=True):
     deleted_at: Optional[datetime] = Field(
         default=None
     )
+
+    pedidos: List["Pedido"] = Relationship(back_populates="direccion")

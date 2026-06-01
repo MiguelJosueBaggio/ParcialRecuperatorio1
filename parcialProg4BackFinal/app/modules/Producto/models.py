@@ -10,6 +10,7 @@ if TYPE_CHECKING: ##Evitar refercnias circualreas
     from app.modules.Ingrediente.models import Ingrediente
     from app.modules.Categoria.models import Categoria
     from app.modules.DetallePedido.models import DetallePedido
+    from app.modules.UnidadMedida.models import UnidadMedida
 
 ##Tabala producto
 class Producto (SQLModel,table=True):
@@ -17,7 +18,7 @@ class Producto (SQLModel,table=True):
     __tablename__= "producto"
 
     id: Optional[int]= Field(default=None, primary_key=True)
-   ## unidad_venta_id:  Optional[int] = Field(default=None, foreign_key="Unidad_medida.id")
+    unidad_venta_id:  Optional[int] = Field(default=None, foreign_key="Unidad_medida.id")
     nombre: str = Field(index=True)
     descripcion :Optional[str]= Field(default=None)
     precio_base: Decimal=Field(default=0.0,ge=0)
@@ -42,5 +43,8 @@ class Producto (SQLModel,table=True):
         back_populates="productos",
         link_model=productoIngredienteLink,)
 
-
-
+    unidad_venta_id: Optional[int] = Field(
+        default=None,
+        foreign_key="unidad_medida.id"
+    )
+    unidad_venta: Optional["UnidadMedida"] = Relationship(back_populates="productos_venta")

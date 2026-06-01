@@ -27,3 +27,5 @@ class PedidoRepository(BaseRepository[Pedido]):
         .limit(limit)
     )
         return self.session.exec(statement).all()
+    
+   

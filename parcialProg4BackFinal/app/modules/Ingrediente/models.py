@@ -29,7 +29,7 @@ class productoIngredienteLink(SQLModel, table=True):
     es_removible:bool = Field(default=True)
     
 
-
+    unidad_medida: Optional["UnidadMedida"] = Relationship(back_populates="ingredientes")
 
 
 

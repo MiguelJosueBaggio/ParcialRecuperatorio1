@@ -14,6 +14,7 @@ from app.modules.Rol.router import router as roles_router
 from app.db.seed import run as seed_usuarios
 from app.modules.FormaPago.seed import seed_forma_pago
 from app.modules.UnidadMedida.seed import seed_unidad_medida
+from app.modules.Rol.seed import seed_roles
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -23,6 +24,7 @@ async def lifespan(app: FastAPI):
         seed_usuarios(session)
         seed_forma_pago(session)
         seed_unidad_medida()
+        seed_roles(session)
     yield
 
 

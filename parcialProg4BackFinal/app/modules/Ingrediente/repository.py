@@ -1,7 +1,7 @@
 from sqlmodel import Session, select
 from app.core.repository import BaseRepository
 from app.modules.Ingrediente.models import Ingrediente, productoIngredienteLink
-
+from typing import Optional
 class IngredienteRepository(BaseRepository[Ingrediente]):
     ##Inicializo el repositorio 
     def __init__(self, session:Session)-> None:
@@ -45,3 +45,23 @@ class IngredienteRepository(BaseRepository[Ingrediente]):
         .where(productoIngredienteLink.es_removible==True)
           )
         return self.session.execute(statement).scalar_one_or_none() ##buscar ingredientes perzonalizables
+
+
+class ProductoIngredienteRepository(BaseRepository[productoIngredienteLink]):
+
+    def __init__(self, session:Session)-> None:
+              super().__init__(session, productoIngredienteLink)
+
+    def get_by_ids(self,ingrediente_id: int,producto_id: int) -> Optional[productoIngredienteLink]:
+
+     statement = (
+        select(productoIngredienteLink)
+        .where(
+            productoIngredienteLink.ingrediente_id == ingrediente_id
+        )
+        .where(
+            productoIngredienteLink.producto_id == producto_id
+        )
+    )
+
+     return self.session.execute(statement).scalar_one_or_none() 

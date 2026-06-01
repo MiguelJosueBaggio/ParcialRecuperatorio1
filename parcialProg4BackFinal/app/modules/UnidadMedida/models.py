@@ -1,8 +1,12 @@
-from typing import Optional
+from typing import Optional, TYPE_CHECKING, List
+from sqlmodel import SQLModel, Field, Relationship
 from datetime import datetime
 
 from sqlmodel import SQLModel, Field 
 from sqlalchemy import Column, DateTime, func
+if TYPE_CHECKING:
+    from app.modules.Producto.models import Producto
+    from app.modules.Ingrediente.models import productoIngredienteLink
 
 class UnidadMedida(SQLModel, table=True):
     """
@@ -33,3 +37,6 @@ class UnidadMedida(SQLModel, table=True):
             nullable=False
         )
     )
+
+    productos_venta: list["Producto"] = Relationship(back_populates="unidad_venta")
+    ingredientes: list["productoIngredienteLink"] = Relationship(back_populates="unidad_medida")

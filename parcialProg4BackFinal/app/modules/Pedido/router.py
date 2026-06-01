@@ -3,6 +3,8 @@ from sqlmodel import Session
 from app.core.database import get_session
 from app.modules.Pedido.service import PedidoService        
 from app.modules.Pedido.schemas import PedidoCreate, PedidoPublic, PedidoList, PedidoUpdate 
+from app.modules.HistorialPedido.schemas import HistorialEstadoPedidoList
+from app.modules.FormaPago.schemas import FormaPagoList,FormaPagoPublic
 router = APIRouter()
 def get_pedido_service(session: Session = Depends(get_session)) -> PedidoService:
     """Factory de dependencia: inyecta el servicio con su Session."""
@@ -25,8 +27,29 @@ def create_pedido(
     return svc.create(data) 
 
 
+@router.get(
+    "/formas-pago/",
+    response_model=FormaPagoList,
+    summary="Obtener formas de pago activas",
+)
+def get_formas_pago(
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=100),
+    svc: PedidoService = Depends(get_pedido_service),
+) -> FormaPagoList:
+    return svc.get_all_forma_pago(offset=offset, limit=limit)
 
-
+@router.get(
+    "/historial/",
+    response_model=HistorialEstadoPedidoList,
+    summary="Obtener historial de estados ",
+)
+def get_historial_estado_pedido(
+    offset: int = Query(default=0, ge=0),
+    limit: int = Query(default=20, ge=1, le=100),
+    svc: PedidoService = Depends(get_pedido_service),
+) -> HistorialEstadoPedidoList:
+    return svc.get_all_historial_estado_pedido(offset=offset, limit=limit)
 
 @router.get(
     "/",        
@@ -65,6 +88,7 @@ def get_pedido(
     svc: PedidoService = Depends(get_pedido_service),
 ) -> PedidoPublic:
     return svc.get_by_id(pedido_id)
+
 
 
 
