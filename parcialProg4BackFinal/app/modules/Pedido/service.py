@@ -304,7 +304,7 @@ class PedidoService:
             pedido.is_active = False
             uow.pedidos.add(pedido)
 
-
+     #HISTORIAL ESTADOS
     def get_all_historial_estado_pedido(self, offset: int, limit: int) -> HistorialEstadoPedidoList:
         with HistorialEstadoPedidoUnitofWork(self._session) as uow:
             historial = uow.historial_estado_pedido.get_all(offset, limit )
@@ -320,5 +320,20 @@ class PedidoService:
             ],
             total=total,
         )
+
+        return result
+    
+
+
+    #FORMADEPAGO
+
+    def get_all_forma_pago(self, offset: int, limit: int):
+        with PedidoUnitofWork(self._session) as uow:
+            formas_pago = uow.forma_pago.get_habilitados(offset, limit)
+        total = uow.forma_pago.count_habilitados()
+        result = {
+            "data": [forma_pago for forma_pago in formas_pago],     
+            "total": total
+        }
 
         return result

@@ -6,6 +6,7 @@ from app.modules.Producto.repository import ProductoRepository
 from app.modules.Pedido.repository import PedidoRepository
 from app.modules.HistorialPedido.repository import HistorialEstadoPedidoRepository
 from app.modules.EstadoPedido.repository import EstadoPedidoRepository
+from app.modules.FormaPago.repository import FormaPagoRepository
 
 class PedidoUnitofWork(UnitOfWork):
     def __init__ (self, session:Session)-> None:
@@ -16,3 +17,4 @@ class PedidoUnitofWork(UnitOfWork):
         self.ingredientes = IngredienteRepository(session)
         self.historial_estado_pedido = HistorialEstadoPedidoRepository(session)
         self.estado_pedido = EstadoPedidoRepository(session)
+        self.forma_pago = FormaPagoRepository(session)

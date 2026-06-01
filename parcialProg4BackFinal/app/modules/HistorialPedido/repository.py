@@ -7,7 +7,7 @@ class HistorialEstadoPedidoRepository(BaseRepository[HistorialEstadoPedido]):
     ##Inicializo el repositorio 
     def __init__(self, session:Session)-> None:
               super().__init__(session, HistorialEstadoPedido)
-
+    
 
     def count_sin_filtro(self):
      stmt = (
