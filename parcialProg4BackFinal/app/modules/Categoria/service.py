@@ -114,7 +114,7 @@ class CategoriaService:
     ##eliminar
     def soft_delete(self, categoria_id: int) -> None:
         
-        with CategoriaPublic(self._session) as uow:
+        with CategoriaUnitofWork(self._session) as uow:
             categoria= self._get_or_404(uow, categoria_id)
             categoria.is_active = False
             uow.categorias.add(categoria)

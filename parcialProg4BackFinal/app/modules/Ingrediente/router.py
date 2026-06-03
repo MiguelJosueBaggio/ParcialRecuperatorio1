@@ -80,17 +80,7 @@ def get_ingrediente(
     return svc.get_by_id(ingrediente_id)
 
 
-
-
-
-def get_ingrediente(
-    ingrediente_id: int,
-    svc: IngredienteService = Depends(get_ingrediente_service),
-) -> IngredientePublic:
-    return svc.get_by_id(ingrediente_id)
-
 ##obteneralergenos
-
 
 
 @router.patch(

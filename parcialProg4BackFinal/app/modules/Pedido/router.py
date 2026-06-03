@@ -66,8 +66,8 @@ def list_pedidos(
 
 
 
-
-@router.get("/{estado_codigo}", response_model=PedidoList, summary="Listar pedidos por estado")
+#modifico el endpoint
+@router.get("/estado/{estado_codigo}", response_model=PedidoList, summary="Listar pedidos por estado")
 def listar_pedidos_por_estado(
     estado_codigo: str,
     offset: int = Query(default=0, ge=0),

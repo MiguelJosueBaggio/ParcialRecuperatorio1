@@ -157,6 +157,8 @@ class PedidoService:
                 pedido = Pedido (**data.model_dump(exclude={"detalles"}))  ##valido pedido a basee de datoos
 
                 pedido.detalles = []  ##paso la lista vacia
+
+                total_pedido = Decimal("0.00")
             
                 for detalle_pedido in data.detalles: ##recoerre los ingredientes agregados en el detalle create
                  
@@ -168,13 +170,13 @@ class PedidoService:
                     detalle_baseDatos.nombre_snapshot=nombre ##cargo a la base de datos el valor de nombre
                     detalle_baseDatos.precio_snapshot=precio ##cargo a la base de datos el valor de precio
                     detalle_baseDatos.subtotal_snap=(precio*detalle_baseDatos.cantidad) 
-                    total_pedido = Decimal(str(pedido.total)) + detalle_baseDatos.subtotal_snap ##calculo el total del pedido sumando el subtotal de cada detalle pedido
+                    total_pedido = total_pedido + detalle_baseDatos.subtotal_snap ## MODIFICADO || calculo el total del pedido sumando el subtotal de cada detalle pedido
                     ##Calcuñlo el subtotal y se guarda en bases de datos
-                    if data.estado_codigo=="ENTREGADO" : ##si el estado del pedido es entregado se descuenta el stock
-                        nuevo_stock = self._restar_stock(uow,detalle_pedido.producto_id,detalle_pedido.cantidad)##restar stock
-                        producto = uow.productos.get_by_id(detalle_pedido.producto_id) ##obtener producto
-                        producto.stock_cantidad = nuevo_stock
-                        uow.detalle_pedidos.add(detalle_baseDatos) ##guardo el cambio en la base de datos SACAR
+                    #if data.estado_codigo=="ENTREGADO" : ##si el estado del pedido es entregado se descuenta el stock
+                     #   nuevo_stock = self._restar_stock(uow,detalle_pedido.producto_id,detalle_pedido.cantidad)##restar stock
+                      #  producto = uow.productos.get_by_id(detalle_pedido.producto_id) ##obtener producto
+                       # producto.stock_cantidad = nuevo_stock
+                        #uow.detalle_pedidos.add(detalle_baseDatos) ##guardo el cambio en la base de datos SACAR
                     detalle_baseDatos.personalizacion=[] # dentor de cada detalle pedido puedo elegir ingredientes a perosnalizar AGREGAR ARRIBA DE SNAPpRECIO
                     for personalizado in detalle_pedido.personalizacion: ##recooro la lista del detalle create que cargo el usuario 
                         removible= self.get_ingrediente_perosnalizables(uow,personalizado) ##uso la fucion para obtener el ingrediente reciebe como para parametro el entero que cargo el usuariioo
