@@ -46,7 +46,7 @@ class IngredienteRepository(BaseRepository[Ingrediente]):
           )
         return self.session.execute(statement).scalar_one_or_none() ##buscar ingredientes perzonalizables
 
-
+    
 class ProductoIngredienteRepository(BaseRepository[productoIngredienteLink]):
 
     def __init__(self, session:Session)-> None:

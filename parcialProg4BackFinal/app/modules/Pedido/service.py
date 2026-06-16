@@ -5,13 +5,19 @@ from app.modules.Pedido.models import Pedido
 from app.modules.DetallePedido.models import DetallePedido
 from app.modules.HistorialPedido.models import HistorialEstadoPedido
 
-from app.modules.Pedido.schemas import PedidoCreate, PedidoPublic, PedidoUpdate, PedidoList, DetallePedidoCreate, DetallePedidoPublic
+from app.modules.Pedido.schemas import PedidoCreate, PedidoPublic, PedidoUpdate, PedidoList, DetallePedidoCreate, DetallePedidoPublic,PedidoEstadoUpdate
 from app.modules.Pedido.unit_of_work import PedidoUnitofWork
 from app.modules.DetallePedido.unit_of_work import DetallePedidoUnitofWork
 from app.modules.EstadoPedido.unit_of_work import EstadoPedidoUnitofWork
 from app.modules.Producto.unit_of_work import ProductoUnitofWork
 from app.modules.HistorialPedido.unit_of_work import HistorialEstadoPedidoUnitofWork
 from app.modules.HistorialPedido.schemas import HistorialEstadoPedidoPublic, HistorialEstadoPedidoList
+
+import logging
+# Logger del módulo para trazabilidad de transiciones y eventos
+logger = logging.getLogger("app.modules.Pedido.service")
+
+
 class PedidoService:
 
     ##Inicia servecie
@@ -125,7 +131,31 @@ class PedidoService:
                    status_code=409,
                    detail=f"stock negativo es decir no hay disponibilidad"
         )
+    
+    def _restar_stock_ingrediente(self,uow:DetallePedidoUnitofWork,ingrediente_id,cantidad,producto_id) ->float:
+        stock= uow.detalle_pedidos.obtener_stock_ingrediente(ingrediente_id)
+        cantidad_ingrediente = uow.detalle_pedidos.cantidad_ingrediente_producto(ingrediente_id, producto_id)
+        if stock is None:
+            raise HTTPException(
+                status_code=404,
+                detail=f"producto s con id ={ingrediente_id} no encontrado"
+            )
         
+        if stock>= cantidad*cantidad_ingrediente:
+            stock -=cantidad*cantidad_ingrediente
+            return stock
+        raise HTTPException(
+                   status_code=409,
+                   detail=f"stock negativo es decir no hay disponibilidad"
+        )
+    def _es_ingrediente_removible(self,uow:DetallePedidoUnitofWork,ingrediente_id) -> bool:
+        es_removible= uow.detalle_pedidos.is_ingrediente_removible(ingrediente_id)
+        if es_removible is None:
+            raise HTTPException(
+                status_code=404,
+                detail=f"ingrediente con id ={ingrediente_id} no encontrado"
+            )
+        return es_removible
             
     def listar_pedidos_por_estado(self,estado_codigo,offset: int = 0, limit: int = 10)-> PedidoList:
         with PedidoUnitofWork (self._session) as uow:
@@ -273,7 +303,22 @@ class PedidoService:
                 )
 
                 uow.productos.add(producto)
+                for ingrediente in detalle.producto.ingredientes:
+                   ## ingrediente = uow.ingredientes.get_by_id(ingrediente_id)
 
+                    if ingrediente is None:
+                        raise HTTPException(status_code=404, detail=f"Ingrediente {ingrediente.id} no encontrado")
+                    
+                   
+                    if ingrediente  not in detalle.personalizacion: ##si el ingrediente no esta en la lista de personalizacion del detalle pedido entonces se descuenta su stock
+                         ingrediente.stock_cantidad = self._restar_stock_ingrediente(
+                          uow,
+                          ingrediente.id,
+                          detalle.cantidad,
+                          detalle.producto_id
+                    )
+
+                    uow.ingredientes.add(ingrediente)
        
 
         historial = HistorialEstadoPedido(

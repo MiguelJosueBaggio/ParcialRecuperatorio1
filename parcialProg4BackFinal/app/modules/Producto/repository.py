@@ -4,6 +4,7 @@ from app.modules.Producto.models import Producto
 from app.modules.Ingrediente.models import Ingrediente, productoIngredienteLink
 
 
+
 class ProductoRepository(BaseRepository[Producto]):
     ##Inicializo el repositorio 
 
@@ -27,3 +28,4 @@ class ProductoRepository(BaseRepository[Producto]):
         .limit(limit)
     )
          return list(self.session.exec(statement).all())
+    
