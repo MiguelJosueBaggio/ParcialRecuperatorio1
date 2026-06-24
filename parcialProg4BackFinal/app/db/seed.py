@@ -12,7 +12,7 @@ Crea:
   - juan / Juan1234!    (role=user)
 """
 
-from sqlmodel import Session, select
+from sqlmodel import Session, select, text
 from app.core.security import hash_password
 from app.modules.usuarios.model import Usuario
 
@@ -24,6 +24,7 @@ USUARIOS_INICIALES = [
         "email": "admin@example.com",
         "celular": "0000000000",
         "password": "Admin1234!",
+        "rol": "ADMIN",
     },
     {
         "nombre": "Juan",
@@ -31,6 +32,7 @@ USUARIOS_INICIALES = [
         "email": "juan@example.com",
         "celular": "1111111111",
         "password": "Juan1234!",
+        "rol": "CLIENT",
     },
 ]
 
@@ -56,8 +58,14 @@ def run(session: Session) -> None:
             )
 
             session.add(usuario)
-            session.commit()   # 👈 commit por usuario
-            print(f" [+] Creado: {data['email']}")
+            session.flush()
+
+            session.execute(
+                text("INSERT INTO usuario_rol (usuario_id, rol_codigo) VALUES (:uid, :rol)"),
+                {"uid": usuario.id, "rol": data["rol"]},
+            )
+            session.commit()
+            print(f" [+] Creado: {data['email']} (rol={data['rol']})")
 
         except Exception as e:
             session.rollback()
