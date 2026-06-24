@@ -48,7 +48,7 @@ app.include_router(ingredientes_router, prefix="/ingredientes")
 app.include_router(productos_router, prefix="/productos", tags=["productos"])
 app.include_router(categorias_router, prefix="/categorias", tags=["categorias"])
 app.include_router(pedidos_router, prefix="/pedidos", tags=["pedidos"]) 
-app.include_router(usuarios_router, prefix="/usuarios", tags=["usuarios"])
+app.include_router(usuarios_router)
 app.include_router(roles_router, prefix="/roles", tags=["roles"])
 
 #python -m fastapi dev app/main.py
