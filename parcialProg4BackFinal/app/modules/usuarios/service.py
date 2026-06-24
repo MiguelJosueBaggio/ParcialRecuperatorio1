@@ -81,11 +81,11 @@ class UsuarioService:
                     nueva_direccion
                 )
 
-            creado = uow.usuarios.add(usuario)
+            uow.usuarios.add(usuario)
 
-            uow.commit()
+           ## uow.commit()
 
-            return UserPublic.model_validate(creado)
+            return UserPublic.model_validate(usuario)
 
     # ---------------- LOGIN ----------------
 
@@ -200,9 +200,11 @@ class UsuarioService:
                         valor
                     )
 
-            uow.commit()
+           
+           
+            #uow.commit()
 
-            uow.session.refresh(usuario)
+            #uow.session.refresh(usuario)
 
             return UserPublic.model_validate(
                 usuario
@@ -226,4 +228,4 @@ class UsuarioService:
                 timezone.utc
             )
 
-            uow.commit()
+           # uow.commit()

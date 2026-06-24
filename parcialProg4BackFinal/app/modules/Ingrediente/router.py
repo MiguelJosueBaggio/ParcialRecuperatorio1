@@ -95,6 +95,18 @@ def update_ingrediente(
 ) -> IngredientePublic:
     return svc.update(ingrediente_id, data)
 
+@router.patch(
+    "/producto-ingrediente/{ingrediente_id}/{producto_id}",
+    response_model=ProductoIngredientePublic,
+    summary="Actualización parcial de relación entre ingrediente y producto",
+)
+def update_producto_ingrediente(
+    ingrediente_id: int,
+    producto_id: int,
+    data: ProductoIngredienteUpdate,
+    svc: IngredienteService = Depends(get_ingrediente_service),
+) -> ProductoIngredientePublic:
+    return svc.update_producto_ingrediente(ingrediente_id, producto_id, data)   
 
 @router.delete(
     "/{ingrediente_id}",

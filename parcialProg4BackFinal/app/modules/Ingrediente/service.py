@@ -150,4 +150,23 @@ class IngredienteService:
 
         return ProductoIngredientePublic.model_validate(existing)
 
-       
+    def update_producto_ingrediente(self, ingrediente_id: int, producto_id:int, data: ProductoIngredienteUpdate) -> ProductoIngredientePublic:
+
+     with IngredienteUnitofWork(self._session) as uow:
+
+        existing = uow.producto_ingredientes.get_by_ids(
+            ingrediente_id,
+            producto_id
+        )
+        if not existing:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Relación entre ingrediente {ingrediente_id} y producto {producto_id} no encontrada"
+            )
+        
+        datos= data.model_dump(exclude_unset=True, exclude={"ingrediente_id","producto_id"})
+        for field, value in datos.items():
+             setattr(existing, field, value)     
+        uow.producto_ingredientes.add(existing)
+
+        return ProductoIngredientePublic.model_validate(existing)

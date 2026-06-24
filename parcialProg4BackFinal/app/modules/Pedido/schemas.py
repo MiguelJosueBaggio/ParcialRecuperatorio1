@@ -68,3 +68,7 @@ class PedidoList(SQLModel):
     data:List[PedidoPublic]
     total:int
 
+class PedidoEstadoUpdate(SQLModel):
+    # Datos de entrada para avanzar el estado de un pedido en la FSM
+    nuevo_estado: str        = Field(min_length=1, max_length=50)
+    motivo:       str | None = Field(default=None, max_length=200)

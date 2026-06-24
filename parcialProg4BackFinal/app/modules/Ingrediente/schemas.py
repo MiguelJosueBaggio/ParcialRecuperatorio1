@@ -19,7 +19,7 @@ class IngredienteCreate(SQLModel):
     descripcion:str 
     es_alergeno: bool = Field(default=False)
     producto_ids: List[int] = Field(default_factory=list)
-
+    stock_cantidad:int = Field(ge=0,default=0)
    
 
 
@@ -32,7 +32,7 @@ class IngredienteUpsate(SQLModel):
     
     is_active: Optional[bool]= None
     producto_ids: Optional[List[int]] = None  # lista de IDs de productos asociados
-
+    stock_cantidad: Optional[int] = Field(default=None, ge=0)
 
     ##Saliida
 
@@ -41,6 +41,7 @@ class IngredientePublic(SQLModel):
     nombre: str
     descripcion:str
     es_alergeno: bool
+    stock_cantidad: int
     is_active:bool
     producto_ids: List[int]=Field(default_factory=list)    
 

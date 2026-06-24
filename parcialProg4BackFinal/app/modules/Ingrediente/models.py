@@ -42,7 +42,7 @@ class Ingrediente(SQLModel, table=True):
     descripcion:Optional [str] 
     es_alergeno:bool = Field(default=True)
     is_active: bool = Field(default=True)
-    
+    stock_cantidad:int = Field(default=0,ge=0)
     
 
 
