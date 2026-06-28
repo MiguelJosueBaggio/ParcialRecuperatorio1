@@ -11,10 +11,12 @@ from app.modules.Categoria.router import router as categorias_router
 from app.modules.Pedido.router import router as pedidos_router
 from app.modules.usuarios.router import router as usuarios_router
 from app.modules.Rol.router import router as roles_router   
+from app.modules.Estadisticas.router import router as estadisticas_router
 from app.db.seed import run as seed_usuarios
 from app.modules.FormaPago.seed import seed_forma_pago
 from app.modules.UnidadMedida.seed import seed_unidad_medida
 from app.modules.Rol.seed import seed_roles
+from app.modules.Pago.router import router as pagos_router
 from app.modules.Pedido.routerWebsocket import router as pedidos_websocket_router
 from app.core.upload_router import router as upload_router
 from fastapi.responses import RedirectResponse, Response
@@ -55,6 +57,8 @@ app.include_router(pedidos_router, prefix="/pedidos", tags=["pedidos"])
 app.include_router(usuarios_router)
 app.include_router(roles_router, prefix="/roles", tags=["roles"])
 app.include_router(pedidos_websocket_router,prefix="/pedidos_websocket",tags=["pedidos_websocket"])
+app.include_router(estadisticas_router, prefix="/estadisticas", tags=["estadisticas"])  
+app.include_router(pagos_router, prefix="/pagos", tags=["pagos"])
 app.include_router(upload_router, prefix="/api/v1")
 #python -m fastapi dev app/main.py
 

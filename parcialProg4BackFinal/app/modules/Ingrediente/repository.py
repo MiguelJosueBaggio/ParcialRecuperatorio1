@@ -45,6 +45,13 @@ class IngredienteRepository(BaseRepository[Ingrediente]):
         .where(productoIngredienteLink.es_removible==True)
           )
         return self.session.execute(statement).scalar_one_or_none() ##buscar ingredientes perzonalizables
+    #Para dashboard, obtener el stock de un ingrediente
+    def get_stock(self,ingrediente_id)->int:
+          statement=(
+            select(Ingrediente.stock_cantidad)
+            .where(Ingrediente.id==ingrediente_id)
+          )
+          return self.session.execute(statement).scalar_one_or_none()   
 
     
 class ProductoIngredienteRepository(BaseRepository[productoIngredienteLink]):

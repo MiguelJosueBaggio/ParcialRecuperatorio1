@@ -4,3 +4,4 @@ sqlmodel
 psycopg[binary]
 python-dotenv
 cloudinary
+mercadopago

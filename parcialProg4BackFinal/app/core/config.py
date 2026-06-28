@@ -39,6 +39,11 @@ class Settings(BaseSettings):
     CLOUDINARY_API_KEY: str = ""
     CLOUDINARY_API_SECRET: str = ""
 
+    MP_ACCESS_TOKEN: str = ""
+    MP_PUBLIC_KEY: str = ""
+    NGROK_URL: str = "http://localhost:8000"
+    FRONTEND_URL: str = "http://localhost:5173"
+
     model_config = {
         "env_file": ".env",
         "env_file_encoding": "utf-8",
