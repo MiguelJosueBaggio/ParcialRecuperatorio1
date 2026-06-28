@@ -25,3 +25,11 @@ class PagoRepository(BaseRepository[Pago]):
     def get_by_pedido_id(self, pedido_id: int) -> list[Pago]:
         statement = select(Pago).where(Pago.pedido_id == pedido_id)
         return list(self.session.exec(statement).all())
+
+    def get_ultimo_by_pedido(self, pedido_id: int) -> Pago | None:
+        statement = (
+            select(Pago)
+            .where(Pago.pedido_id == pedido_id)
+            .order_by(Pago.id.desc())
+        )
+        return self.session.exec(statement).first()

@@ -27,6 +27,11 @@ class PagoPublic(SQLModel):
     monto: Decimal = Field(default=0.0, ge=0)
 
 
+class ConfirmarPagoRequest(SQLModel):
+    pedido_id: int
+    payment_id: Optional[str] = None
+
+
 class PagoList(SQLModel):
     data: List[PagoPublic]
     total: int

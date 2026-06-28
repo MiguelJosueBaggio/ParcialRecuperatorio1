@@ -1,6 +1,7 @@
-fastapi[standasrd]
+fastapi[standard]
 uvicorn
 sqlmodel
 psycopg2-binary
 python-dotenv
 cloudinary
+mercadopago
