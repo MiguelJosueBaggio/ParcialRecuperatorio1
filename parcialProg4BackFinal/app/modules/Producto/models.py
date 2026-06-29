@@ -5,7 +5,8 @@ from decimal import Decimal
 from datetime import datetime
 from sqlalchemy import Column, ForeignKey, Integer, ARRAY, TEXT
 from app.modules.Ingrediente.models import productoIngredienteLink
-if TYPE_CHECKING:
+from app.modules.DetallePedido.models import DetallePedido
+if TYPE_CHECKING: ##Evitar refercnias circualreas
     from app.modules.Ingrediente.models import Ingrediente
     from app.modules.Categoria.models import Categoria
     from app.modules.DetallePedido.models import DetallePedido

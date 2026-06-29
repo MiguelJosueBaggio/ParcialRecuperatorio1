@@ -1,5 +1,5 @@
 from sqlmodel import Session
-from app.core.database import engine
+from app.db import engine
 from app.modules.EstadoPedido.models import EstadoPedidoModel
 
 def seed_estado_pedido():
