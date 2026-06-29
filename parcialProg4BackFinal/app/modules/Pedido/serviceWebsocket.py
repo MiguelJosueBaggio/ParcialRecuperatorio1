@@ -605,3 +605,48 @@ class PedidoService:
             f"WS emitido: {event_type} | pedido={pedido_id} | "
             f"roles={roles_a_notificar} | rooms_activas={manager.get_rooms_info()}"
         )
+    
+
+
+
+      ##eliminar
+    def soft_delete(self, pedido_id: int) -> None:
+        
+        with PedidoUnitofWork(self._session) as uow:
+            pedido= self._get_or_404(uow, pedido_id)
+            pedido.is_active = False
+            uow.pedidos.add(pedido)
+
+     #HISTORIAL ESTADOS
+    def get_all_historial_estado_pedido(self, offset: int, limit: int) -> HistorialEstadoPedidoList:
+        with HistorialEstadoPedidoUnitofWork(self._session) as uow:
+            historial = uow.historial_estado_pedido.get_all(offset, limit )
+
+        total = uow.historial_estado_pedido.count_sin_filtro() 
+        
+     
+
+        result = HistorialEstadoPedidoList(
+            data=[
+                HistorialEstadoPedidoPublic.model_validate(i)
+                for i in historial              
+            ],
+            total=total,
+        )
+
+        return result
+    
+
+
+    #FORMADEPAGO
+
+    def get_all_forma_pago(self, offset: int, limit: int):
+        with PedidoUnitofWork(self._session) as uow:
+            formas_pago = uow.forma_pago.get_habilitados(offset, limit)
+        total = uow.forma_pago.count_habilitados()
+        result = {
+            "data": [forma_pago for forma_pago in formas_pago],     
+            "total": total
+        }
+
+        return result

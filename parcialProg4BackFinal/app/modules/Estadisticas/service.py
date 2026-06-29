@@ -25,6 +25,7 @@ class EstadisticasService:
                 periodo=r.periodo,
                 total_ventas=r.total_ventas,
                 cantidad_pedidos=r.cantidad_pedidos,
+                promedio_ventas=r.promedio_ventas
             )
             for r in rows
         ]
@@ -36,9 +37,8 @@ class EstadisticasService:
         return [
             GetProductosMasVendidos(
                 producto=r.producto,
-                total_ventas=r.total_ventas,
-                cantidad_pedidos=r.cantidad_pedidos,        
-                promedio_ventas=r.promedio_ventas
+                cantidad_pedidos=r.total_vendido
+                
             )
             for r in rows
         ]   

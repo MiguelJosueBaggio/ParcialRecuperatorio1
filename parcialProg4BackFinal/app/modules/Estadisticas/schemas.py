@@ -30,6 +30,6 @@ class GetPedidosPorFormaPago(SQLModel):
 
 class GetProductosMasVendidos(SQLModel):
     producto: str
-    total_ventas: Decimal
+   
     cantidad_pedidos: int
-    promedio_ventas: Decimal   
+    

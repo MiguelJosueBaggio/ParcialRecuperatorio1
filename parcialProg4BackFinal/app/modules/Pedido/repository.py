@@ -78,6 +78,7 @@ class PedidoRepository(BaseRepository[Pedido]):
             periodo,
             func.sum(Pedido.total).label("total_ventas"),
             func.count(Pedido.id).label("cantidad_pedidos"),
+            func.avg(Pedido.total).label("promedio_ventas"),
         )
         .where(Pedido.created_at.between(desde, hasta))
         .where(Pedido.estado_codigo != "CANCELADO")
@@ -87,20 +88,21 @@ class PedidoRepository(BaseRepository[Pedido]):
 
          return self.session.exec(statement).all()
     
-    def top_productos_mas_vendidos(self, limit: int = 10): #USADOS
-        statement = (
-            select(
-                DetallePedido.producto_id,
-                func.sum(DetallePedido.cantidad).label("total_vendido"),
-            )
-            .join(Pedido, Pedido.id == DetallePedido.pedido_id)
-            
-            .where(Pedido.estado_codigo != "CANCELADO")
-            .group_by(DetallePedido.producto_id)
-            .order_by(func.sum(DetallePedido.cantidad).desc())
-            .limit(limit)
+    def top_productos_mas_vendidos(self, limit: int = 10):
+      statement = (
+        select(
+            Producto.nombre.label("producto"),
+            func.sum(DetallePedido.cantidad).label("total_vendido"),
         )
-        return self.session.exec(statement).all()
+        .join(DetallePedido, Producto.id == DetallePedido.producto_id)
+        .join(Pedido, Pedido.id == DetallePedido.pedido_id)
+        .where(Pedido.estado_codigo != "CANCELADO")
+        .group_by(Producto.id, Producto.nombre)
+        .order_by(func.sum(DetallePedido.cantidad).desc())
+        .limit(limit)
+    )
+
+      return self.session.exec(statement).all()
     
     def get_pedidos_por_forma_pago(self):
         statement = (
