@@ -4,8 +4,7 @@ from sqlalchemy import Column, ForeignKey, Integer
 from decimal import Decimal
 from datetime import datetime
 from sqlalchemy import Column, ForeignKey, Integer, ARRAY, TEXT
-from app.modules.Producto.models import Producto
-if TYPE_CHECKING: ##Evitar refercnias circualreas
+if TYPE_CHECKING:
     from app.modules.Producto.models import Producto
     from app.modules.Pedido.models import Pedido
 

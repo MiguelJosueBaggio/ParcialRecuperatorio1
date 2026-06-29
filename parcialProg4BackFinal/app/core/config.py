@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     postgres_host: str = "localhost"
     postgres_port: int = 5432
 
+    SECRET_KEY: str = "cambiar-esto-en-produccion-por-un-secreto-largo-y-aleatorio"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+
     @computed_field
     @property
     def DATABASE_URL(self) -> str:
