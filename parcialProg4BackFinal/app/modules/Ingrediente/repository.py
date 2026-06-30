@@ -71,4 +71,11 @@ class ProductoIngredienteRepository(BaseRepository[productoIngredienteLink]):
         )
     )
 
-     return self.session.execute(statement).scalar_one_or_none() 
+     return self.session.execute(statement).scalar_one_or_none()
+
+    def get_by_producto_id(self, producto_id: int) -> list[productoIngredienteLink]:
+        statement = (
+            select(productoIngredienteLink)
+            .where(productoIngredienteLink.producto_id == producto_id)
+        )
+        return list(self.session.exec(statement).all())

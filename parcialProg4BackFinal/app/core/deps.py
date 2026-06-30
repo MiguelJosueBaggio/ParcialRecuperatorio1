@@ -197,7 +197,10 @@ def require_role(allowed_roles: list[str]):
                 r.codigo for r in rol_repo.get_roles_de_usuario(user_id)
             ]
 
-            if not any(r in allowed_roles for r in roles_usuario):
+            roles_usuario_normalizados = {r.upper() for r in roles_usuario}
+            allowed_roles_normalizados = {r.upper() for r in allowed_roles}
+
+            if not roles_usuario_normalizados & allowed_roles_normalizados:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail=(

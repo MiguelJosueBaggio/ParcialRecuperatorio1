@@ -2,7 +2,7 @@ from fastapi import HTTPException, status
 from sqlmodel import Session
 
 from app.modules.Ingrediente.models import Ingrediente, productoIngredienteLink
-from app.modules.Ingrediente.schemas import IngredienteCreate,IngredienteUpsate,IngredientePublic,IngredienteList,ProductoIngredienteCreate,ProductoIngredienteUpdate,ProductoIngredientePublic   
+from app.modules.Ingrediente.schemas import IngredienteCreate,IngredienteUpsate,IngredientePublic,IngredienteList,ProductoIngredienteCreate,ProductoIngredienteUpdate,ProductoIngredientePublic, ProductoIngredienteList
 from app.modules.Ingrediente.unit_of_work import IngredienteUnitofWork
 
 class IngredienteService:
@@ -11,6 +11,11 @@ class IngredienteService:
     def __init__(self, session: Session) -> None:
         
         self._session = session
+
+    def _to_public(self, ingrediente: Ingrediente) -> IngredientePublic:
+        data = IngredientePublic.model_validate(ingrediente)
+        data.producto_ids = [p.id for p in ingrediente.productos]
+        return data
 
 ##obtenemos un ingrediento por su id sino retruna error 404
     def get_or_404(self, uow: IngredienteUnitofWork, ingrediente_id: int) -> Ingrediente:
@@ -30,10 +35,10 @@ class IngredienteService:
             total = uow.ingredientes.count()
 
             result = IngredienteList(
-                data=[IngredientePublic.model_validate(i) for i in ingredientes],
+                data=[self._to_public(i) for i in ingredientes],
                 total=total,
             )
-        
+
         return result
     ###Obtenemos los activos
     def get_all(self,offset:int=0,limit:int=10)->IngredienteList:
@@ -42,10 +47,10 @@ class IngredienteService:
             total = uow.ingredientes.count()
 
             result = IngredienteList(
-                data=[IngredientePublic.model_validate(i) for i in ingredientes],
+                data=[self._to_public(i) for i in ingredientes],
                 total=total,
             )
-        
+
         return result
         ##Todos los ingredientes de un producto
     def get_producto_or_404(self,uow:IngredienteUnitofWork, producto_id:int):
@@ -65,9 +70,9 @@ class IngredienteService:
         
         with IngredienteUnitofWork(self._session) as uow:
             ingrediente = self.get_or_404(uow, ingrediente_id)
-            result = IngredientePublic.model_validate(ingrediente)
+            result = self._to_public(ingrediente)
 
-        return result    
+        return result
     
     
 
@@ -84,10 +89,8 @@ class IngredienteService:
                 ingrediente.productos.append(producto)
 
             uow.ingredientes.add(ingrediente)
-           
 
-            
-            result = IngredientePublic.model_validate(ingrediente)
+            result = self._to_public(ingrediente)
 
         return result
     
@@ -117,7 +120,7 @@ class IngredienteService:
 
         uow.ingredientes.add(ingrediente)
 
-     return IngredientePublic.model_validate(ingrediente)
+     return self._to_public(ingrediente)
     
 
 
@@ -141,11 +144,19 @@ class IngredienteService:
             data.producto_id
         )
         if existing:    
-                     datos= data.model_dump(exclude_unset=True, exclude={"ingrediente_id","producto_id"})
-                     for field, value in datos.items():
-                          setattr(existing, field, value)     
-                     uow.producto_ingredientes.add(existing)
-
+            datos= data.model_dump(exclude_unset=True, exclude={"ingrediente_id","producto_id"})
+            for field, value in datos.items():
+                setattr(existing, field, value)     
+            uow.producto_ingredientes.add(existing)
+        else: 
+            existing = productoIngredienteLink(
+                producto_id=data.producto_id,
+                ingrediente_id=data.ingrediente_id,
+                cantidad=data.cantidad,
+                unidad_medida_id=data.unidad_medida_id,
+                es_removible=data.es_removible,
+            )
+            uow.producto_ingredientes.add(existing)
         
 
         return ProductoIngredientePublic.model_validate(existing)
@@ -163,10 +174,38 @@ class IngredienteService:
                 status_code=404,
                 detail=f"Relación entre ingrediente {ingrediente_id} y producto {producto_id} no encontrada"
             )
-        
+
         datos= data.model_dump(exclude_unset=True, exclude={"ingrediente_id","producto_id"})
         for field, value in datos.items():
-             setattr(existing, field, value)     
+             setattr(existing, field, value)
         uow.producto_ingredientes.add(existing)
 
         return ProductoIngredientePublic.model_validate(existing)
+
+    def delete_producto_ingrediente(self, ingrediente_id: int, producto_id: int) -> None:
+
+     with IngredienteUnitofWork(self._session) as uow:
+
+        existing = uow.producto_ingredientes.get_by_ids(
+            ingrediente_id,
+            producto_id
+        )
+        if not existing:
+            raise HTTPException(
+                status_code=404,
+                detail=f"Relación entre ingrediente {ingrediente_id} y producto {producto_id} no encontrada"
+            )
+
+        uow.producto_ingredientes.delete(existing)
+
+    def list_producto_ingredientes(self, producto_id: int) -> ProductoIngredienteList:
+
+        with IngredienteUnitofWork(self._session) as uow:
+
+            self.get_producto_or_404(uow, producto_id)
+            relaciones = uow.producto_ingredientes.get_by_producto_id(producto_id)
+
+            return ProductoIngredienteList(
+                data=[ProductoIngredientePublic.model_validate(r) for r in relaciones],
+                total=len(relaciones),
+            )

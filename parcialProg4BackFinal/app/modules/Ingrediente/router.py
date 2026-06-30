@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends,Query,status
 from sqlmodel import Session
 from app.core.database import get_session
 from app.modules.Ingrediente.service import IngredienteService
-from app.modules.Ingrediente.schemas import IngredienteCreate,IngredienteUpsate,IngredientePublic,IngredienteList,ProductoIngredienteCreate,ProductoIngredienteUpdate,ProductoIngredientePublic   
+from app.modules.Ingrediente.schemas import IngredienteCreate,IngredienteUpsate,IngredientePublic,IngredienteList,ProductoIngredienteCreate,ProductoIngredienteUpdate,ProductoIngredientePublic,ProductoIngredienteList
    
 
 router = APIRouter()
@@ -106,7 +106,30 @@ def update_producto_ingrediente(
     data: ProductoIngredienteUpdate,
     svc: IngredienteService = Depends(get_ingrediente_service),
 ) -> ProductoIngredientePublic:
-    return svc.update_producto_ingrediente(ingrediente_id, producto_id, data)   
+    return svc.update_producto_ingrediente(ingrediente_id, producto_id, data)
+
+@router.get(
+    "/producto-ingrediente/producto/{producto_id}",
+    response_model=ProductoIngredienteList,
+    summary="Listar ingredientes asignados a un producto (con cantidad, unidad y removible)",
+)
+def list_producto_ingredientes(
+    producto_id: int,
+    svc: IngredienteService = Depends(get_ingrediente_service),
+) -> ProductoIngredienteList:
+    return svc.list_producto_ingredientes(producto_id)
+
+@router.delete(
+    "/producto-ingrediente/{ingrediente_id}/{producto_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Eliminar relación entre ingrediente y producto",
+)
+def delete_producto_ingrediente(
+    ingrediente_id: int,
+    producto_id: int,
+    svc: IngredienteService = Depends(get_ingrediente_service),
+) -> None:
+    svc.delete_producto_ingrediente(ingrediente_id, producto_id)
 
 @router.delete(
     "/{ingrediente_id}",

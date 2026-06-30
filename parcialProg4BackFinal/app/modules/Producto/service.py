@@ -10,8 +10,13 @@ class ProductoService:
 
     ##Inicia servecie
     def __init__(self, session: Session) -> None:
-        
+
         self._session = session
+
+    def _to_public(self, producto: Producto) -> ProductoPublic:
+        data = ProductoPublic.model_validate(producto)
+        data.ingrediente_ids = [i.id for i in producto.ingredientes]
+        return data
 
 ##obtenemos un producto por su id sino retruna error 404
     def _get_or_404(self, uow: ProductoUnitofWork, producto_id: int) -> Producto:
@@ -38,7 +43,7 @@ class ProductoService:
 
         result = ProductoList(
             data=[
-                ProductoPublic.model_validate(i)
+                self._to_public(i)
                 for i in productos
             ],
             total=total,
@@ -73,9 +78,9 @@ class ProductoService:
         
         with ProductoUnitofWork(self._session) as uow:
             producto = self._get_or_404(uow, producto_id)
-            result = ProductoPublic.model_validate(producto)
+            result = self._to_public(producto)
 
-        return result    
+        return result
     
  
 ##crea producto
@@ -99,8 +104,7 @@ class ProductoService:
             
             uow.productos.add(producto)
 
-            
-            result = ProductoPublic.model_validate(producto)
+            result = self._to_public(producto)
 
         return result
     
@@ -138,7 +142,7 @@ class ProductoService:
 
         uow.productos.add(producto)
 
-      return ProductoPublic.model_validate(producto)
+      return self._to_public(producto)
 
 
     ##eliminar

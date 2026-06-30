@@ -185,7 +185,7 @@ class PedidoService:
         with PedidoUnitofWork(self._session) as uow:
             pedidos = [
                 p for p in uow.pedidos.get_active()
-                if p.estado_codigo in ("CONFIRMADO", "EN_PREPARACION")
+                if p.estado_codigo in ("CONFIRMADO", "EN_PREP")
             ]
             pedidos.sort(key=lambda p: p.id or 0)
             return [PedidoPublic.model_validate(p) for p in pedidos]
@@ -300,7 +300,16 @@ class PedidoService:
         estado_actual = uow.estado_pedido.get_by_codigo( #obtenemos el estado actual del pedido de la base de datos, si el pedido no tiene estado entonces estado_actual sera None
             pedido.estado_codigo)
 
-        if estado_nuevo.orden - estado_actual.orden != 1: ##verificamos que el cambio de estado sea valido, es decir que el nuevo estado sea el siguiente al estado actual, si el cambio de estado no es valido entonces se retorna un error 400
+        if estado_actual.es_terminal: ##un estado terminal (ENTREGADO/CANCELADO) no admite mas transiciones
+            raise HTTPException(
+                400,
+                "Cambio de estado no permitido"
+            )
+
+        es_secuencial = estado_nuevo.orden - estado_actual.orden == 1 ##avance normal al siguiente estado
+        es_cancelacion = nuevo_estado == "CANCELADO" ##se puede cancelar desde cualquier estado no terminal
+
+        if not (es_secuencial or es_cancelacion):
             raise HTTPException(
                 400,
                 "Cambio de estado no permitido"

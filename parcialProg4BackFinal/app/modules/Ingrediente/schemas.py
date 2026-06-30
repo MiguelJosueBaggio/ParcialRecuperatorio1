@@ -37,13 +37,13 @@ class IngredienteUpsate(SQLModel):
     ##Saliida
 
 class IngredientePublic(SQLModel):
-    id: int 
+    id: int
     nombre: str
-    descripcion:str
+    descripcion: Optional[str] = None
     es_alergeno: bool
     stock_cantidad: int
-    is_active:bool
-    producto_ids: List[int]=Field(default_factory=list)    
+    is_active: bool
+    producto_ids: List[int] = Field(default_factory=list)  
 
 class IngredienteList(SQLModel):
     data:List[IngredientePublic]
