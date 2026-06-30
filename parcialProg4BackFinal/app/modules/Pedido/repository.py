@@ -88,16 +88,20 @@ class PedidoRepository(BaseRepository[Pedido]):
          return self.session.exec(statement).all()
     
     def top_productos_mas_vendidos(self, limit: int = 10): #USADOS
+        cantidad_pedidos = func.count(func.distinct(DetallePedido.pedido_id))
+        total_ventas = func.sum(DetallePedido.subtotal_snap)
         statement = (
             select(
-                DetallePedido.producto_id,
-                func.sum(DetallePedido.cantidad).label("total_vendido"),
+                Producto.nombre.label("producto"),
+                total_ventas.label("total_ventas"),
+                cantidad_pedidos.label("cantidad_pedidos"),
+                (total_ventas / cantidad_pedidos).label("promedio_ventas"),
             )
             .join(Pedido, Pedido.id == DetallePedido.pedido_id)
-            
+            .join(Producto, Producto.id == DetallePedido.producto_id)
             .where(Pedido.estado_codigo != "CANCELADO")
-            .group_by(DetallePedido.producto_id)
-            .order_by(func.sum(DetallePedido.cantidad).desc())
+            .group_by(Producto.id, Producto.nombre)
+            .order_by(total_ventas.desc())
             .limit(limit)
         )
         return self.session.exec(statement).all()
