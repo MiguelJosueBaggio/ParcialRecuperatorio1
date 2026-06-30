@@ -17,6 +17,26 @@ import logging
 # Logger del módulo para trazabilidad de transiciones y eventos
 logger = logging.getLogger("app.modules.Pedido.service")
 
+# Evento WebSocket a emitir según el estado destino de la transición
+EVENTOS_WS = {
+    "PENDIENTE":  "NUEVO_PEDIDO",
+    "CONFIRMADO": "PEDIDO_CONFIRMADO",
+    "EN_PREP":    "PEDIDO_EN_PREPARACION",
+    "EN_CAMINO":  "PEDIDO_EN_CAMINO",
+    "ENTREGADO":  "PEDIDO_ENTREGADO",
+    "CANCELADO":  "PEDIDO_CANCELADO",
+}
+
+# Roles de staff a notificar según el estado destino de la transición
+ROLES_POR_TRANSICION = {
+    "PENDIENTE":  ["pedidos", "admin"],
+    "CONFIRMADO": ["pedidos", "cocina", "admin"],
+    "EN_PREP":    ["cocina", "pedidos", "admin"],
+    "EN_CAMINO":  ["pedidos", "admin"],
+    "ENTREGADO":  ["pedidos", "admin"],
+    "CANCELADO":  ["pedidos", "cocina", "admin"],
+}
+
 
 class PedidoService:
 
@@ -136,9 +156,12 @@ class PedidoService:
             return stock
         raise HTTPException(
                    status_code=409,
-                   detail=f"stock negativo es decir no hay disponibilidad"
+                   detail=(
+                       f"Stock insuficiente para producto_id={producto_id}: "
+                       f"disponible={stock}, solicitado={cantidad}"
+                   )
         )
-    
+
     def _restar_stock_ingrediente(self,uow:DetallePedidoUnitofWork,ingrediente_id,cantidad,producto_id) ->float:
         stock= uow.detalle_pedidos.obtener_stock_ingrediente(ingrediente_id)
         cantidad_ingrediente = uow.detalle_pedidos.cantidad_ingrediente_producto(ingrediente_id, producto_id)
@@ -153,7 +176,11 @@ class PedidoService:
             return stock
         raise HTTPException(
                    status_code=409,
-                   detail=f"stock negativo es decir no hay disponibilidad"
+                   detail=(
+                       f"Stock insuficiente para ingrediente_id={ingrediente_id} "
+                       f"(producto_id={producto_id}): disponible={stock}, "
+                       f"solicitado={cantidad*cantidad_ingrediente}"
+                   )
         )
     def _es_ingrediente_removible(self,uow:DetallePedidoUnitofWork,ingrediente_id) -> bool:
         es_removible= uow.detalle_pedidos.is_ingrediente_removible(ingrediente_id)
@@ -276,7 +303,7 @@ class PedidoService:
 
     ###Modificador####falta cooregir
     
-    def update(self, pedido_id:int, data:PedidoUpdate)->PedidoPublic:
+    async def update(self, pedido_id:int, data:PedidoUpdate)->PedidoPublic:
 
      with PedidoUnitofWork(self._session) as uow:
 
@@ -364,11 +391,31 @@ class PedidoService:
 
         uow.pedidos.add(pedido)
 
-     return PedidoPublic.model_validate(pedido)
-    
+     result = PedidoPublic.model_validate(pedido)
+
+     # Emitir eventos WebSocket DESPUÉS del commit del UoW, para asegurar
+     # que el cambio ya esté persistido antes de notificar a los clientes.
+     if nuevo_estado:
+        event_type = EVENTOS_WS.get(nuevo_estado)
+        if event_type:
+            from app.core.websocket import manager
+
+            # mode="json" convierte Decimal (subtotal/descuento/total) a un
+            # tipo serializable — send_json() usa json.dumps() por debajo,
+            # que no sabe serializar Decimal directamente.
+            ws_data = result.model_dump(mode="json")
+
+            await manager.broadcast_to_order(pedido_id, event_type, ws_data)
+
+            roles = ROLES_POR_TRANSICION.get(nuevo_estado, [])
+            if roles:
+                await manager.broadcast_to_roles(roles, event_type, ws_data)
+
+     return result
+
     async def avanzar_estado(self, pedido_id: int, nuevo_estado: str, current_user) -> PedidoPublic:
         data = PedidoUpdate(estado_codigo=nuevo_estado, usuario_id=current_user.id)
-        return self.update(pedido_id, data)
+        return await self.update(pedido_id, data)
 
 
     ##eliminar

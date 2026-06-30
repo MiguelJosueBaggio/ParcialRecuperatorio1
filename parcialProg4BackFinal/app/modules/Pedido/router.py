@@ -97,12 +97,12 @@ def get_pedido(
     response_model=PedidoPublic,
     summary="Actualizar pedido por ID",
 )
-def update_pedido(
+async def update_pedido(
     pedido_id: int,
     data: PedidoUpdate,
     svc: PedidoService = Depends(get_pedido_service),
 ) -> PedidoPublic:
-    return svc.update(pedido_id, data)   
+    return await svc.update(pedido_id, data)
 
 
 

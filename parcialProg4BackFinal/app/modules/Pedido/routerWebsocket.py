@@ -462,8 +462,8 @@ async def websocket_endpoint(
                 if rol_upper not in ("ADMIN", "PEDIDOS", "COCINA"):
                     with Session(engine) as db_session:
                         with UsuarioUnitofWork(db_session) as uow:
-                            from app.modules.Pedido.unit_of_work import PedidoUnitOfWork
-                            pedido_uow = PedidoUnitOfWork(db_session)
+                            from app.modules.Pedido.unit_of_work import PedidoUnitofWork
+                            pedido_uow = PedidoUnitofWork(db_session)
                             pedido = pedido_uow.pedidos.get_by_id(order_id)
 
                             # Validar que:
