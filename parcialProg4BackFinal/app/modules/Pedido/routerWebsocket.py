@@ -155,7 +155,8 @@ async def create_pedido(
     current_user: Annotated[UserPublic, Depends(get_current_active_user)],
     svc: PedidoService = Depends(get_pedido_service),
 ) -> PedidoPublic:
-    return await svc.create(data, usuario_id=current_user.id)
+    data.usuario_id = current_user.id
+    return svc.create(data)
 
 
 # =============================================================================
@@ -383,15 +384,22 @@ async def websocket_endpoint(
     #
     with Session(engine) as db_session:
         with UsuarioUnitofWork(db_session) as uow:
-            user = uow.usuarios.get_by_username(username)
-            if not user or user.disabled:
-                await websocket.accept()
-                await websocket.close(code=1008, reason="Usuario inválido o inactivo")
-                return
-            # Extraer valores primitivos DENTRO de la sesión antes de que se cierre.
-            # Evita DetachedInstanceError al acceder a atributos fuera del bloque.
-            user_role: str = user.role
-            user_id: int = user.id
+                from app.modules.Rol.repository import RolRepository
+                try:
+                    user_id_int = int(username)
+                except (ValueError, TypeError):
+                    await websocket.accept()
+                    await websocket.close(code=1008, reason="Token inválido")
+                    return
+                user = uow.usuarios.get_by_id(user_id_int)
+                if not user or user.deleted_at is not None:
+                    await websocket.accept()
+                    await websocket.close(code=1008, reason="Usuario inválido o inactivo")
+                    return
+                rol_repo = RolRepository(db_session)
+                roles = [r.codigo for r in rol_repo.get_roles_de_usuario(user_id_int)]
+                user_role: str = roles[0] if roles else "CLIENT"
+                user_id: int = user.id
 
     # =========================================================================
     # PASO 4: REGISTRAR EN EL CONNECTION MANAGER

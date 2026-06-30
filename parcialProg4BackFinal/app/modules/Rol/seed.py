@@ -8,6 +8,7 @@ def seed_roles(session: Session):
         ("ADMIN", "Administrador", "Acceso total sin restricciones"),
         ("STOCK", "Operador Stock", "Actualiza stock y disponible"),
         ("PEDIDOS", "Operador Pedidos", "Avanza estados CONFIRMADO→ENTREGADO"),
+        ("COCINA", "Cocina", "Gestiona la pantalla de preparación de pedidos (KDS)"),
         ("CLIENT", "Cliente", "Opera solo sus propios datos"),
     ]
 

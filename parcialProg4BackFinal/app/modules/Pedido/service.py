@@ -56,6 +56,13 @@ class PedidoService:
         )
 
         return result
+    
+    def list_all(self) -> list[PedidoPublic]:
+        with PedidoUnitofWork(self._session) as uow:
+            pedidos = uow.pedidos.get_active()
+            return [PedidoPublic.model_validate(p) for p in pedidos]
+
+
         ##obtener ingrediente del produto segun su id
     def get_ingrediente_or_404(self,uow:PedidoUnitofWork, ingrediente_id:int):
         
@@ -173,6 +180,16 @@ class PedidoService:
         )
 
         return result
+    
+    def list_cocina_pedidos(self) -> list[PedidoPublic]:
+        with PedidoUnitofWork(self._session) as uow:
+            pedidos = [
+                p for p in uow.pedidos.get_active()
+                if p.estado_codigo in ("CONFIRMADO", "EN_PREPARACION")
+            ]
+            pedidos.sort(key=lambda p: p.id or 0)
+            return [PedidoPublic.model_validate(p) for p in pedidos]
+
 
            
 
@@ -340,7 +357,9 @@ class PedidoService:
 
      return PedidoPublic.model_validate(pedido)
     
-
+    async def avanzar_estado(self, pedido_id: int, nuevo_estado: str, current_user) -> PedidoPublic:
+        data = PedidoUpdate(estado_codigo=nuevo_estado, usuario_id=current_user.id)
+        return self.update(pedido_id, data)
 
 
     ##eliminar

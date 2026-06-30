@@ -117,5 +117,3 @@ def delete_pedido(
     svc: PedidoService = Depends(get_pedido_service),
 ) -> None:
     svc.soft_delete(pedido_id)
-
-        
